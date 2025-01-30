@@ -12,6 +12,7 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'auth.login'
+login_manager.login_message = ''
 
 # Import routes AFTER initializing db to avoid circular imports
 from routes.main import main

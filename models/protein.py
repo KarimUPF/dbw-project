@@ -1,7 +1,7 @@
 from app import db
 
 def load_protein(protein_id):
-    return db.session.execute(db.select(Protein).filter_by(id=protein_id)).scalar_one()
+    return db.session.execute(db.select(Protein).filter_by(accession_id=protein_id)).scalar_one()
 
 class Protein(db.Model):
     accession_id = db.Column(db.String(45),unique=True,primary_key=True)

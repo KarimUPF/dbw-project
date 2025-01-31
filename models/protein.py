@@ -13,7 +13,7 @@ class Protein(db.Model):
     database=db.Column(db.String(100), nullable=False)
     
     #Reference
-    domains = db.relationship("Domain", secondary=domain_has_protein, backref="protein")
+    domains = db.relationship("Domain", secondary='domain_has_protein', backref="protein")
     ptms = db.relationship('PTM', secondary='protein_has_ptm', backref='proteins')
     #1:N relationship
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

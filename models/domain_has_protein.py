@@ -1,7 +1,7 @@
 from app import db
 
 class DomainHasProtein(db.Model):
-     __tablename__ = 'domain_has_protein'
+    __tablename__ = 'domain_has_protein'
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), primary_key=True)
     protein_accession_id = db.Column(db.String(45), db.ForeignKey('protein.accession_id'), primary_key=True)
 

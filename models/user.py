@@ -10,9 +10,9 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    last_login=db.Column(DateTime, nullable=True)
+    last_login=db.Column(db.DateTime, nullable=True)
     #1:N relationship
-    roles_role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
 
     #Reference
     history = db.relationship('History', backref='user', lazy=True)

@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import bcrypt, db
-from models.user import User
+from forms.registration_form import RegistrationForm
+from models.all_models import User
 from forms.login_form import LoginForm
+from datetime import datetime
 
 auth = Blueprint('auth', __name__)
 
@@ -14,7 +16,7 @@ def signup():
     form = RegistrationForm()
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user = User(username=form.username.data, email=form.email.data, password=hashed_password)
+        user = User(username=form.username.data, email=form.email.data, password=hashed_password, last_login=datetime.now(), role_id=1)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You can now log in.', 'success')
@@ -37,7 +39,6 @@ def login():
             # Redirect to the next page if specified, otherwise home
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('main.home'))
-        
         else:
             flash('Login failed. Check username and password.', 'danger')
 

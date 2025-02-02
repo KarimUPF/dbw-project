@@ -1,5 +1,5 @@
 from app import app, db, bcrypt
-from models.user import User
+from models import User
 
 with app.app_context():
     hashed_password = bcrypt.generate_password_hash("password").decode('utf-8')

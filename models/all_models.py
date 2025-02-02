@@ -3,8 +3,6 @@ from flask_login import UserMixin
 from sqlalchemy import BLOB, Enum
 from datetime import datetime
 
-
-
 class DomainHasProtein(db.Model):
     __tablename__ = 'domain_has_protein'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

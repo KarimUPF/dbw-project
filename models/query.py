@@ -1,5 +1,5 @@
 from app import db
-from sqlalchemy.dialects.mysql import BLOB
+from sqlalchemy import BLOB
 from datetime import datetime
 
 class Query(db.Model):
@@ -9,11 +9,10 @@ class Query(db.Model):
     graph = db.Column(BLOB, nullable=True)
     date = db.Column(db.DateTime, default=datetime, nullable=False)
 
-    #1:N relationship
-    History_History_ID = db.Column(db.Integer, db.ForeignKey('history.history_ID'), nullable=False)
-
-    #Reference
-    history = db.relationship('History', backref='query', lazy=True)
+    #Many query one history
+    history_id = db.Column(db.Integer, db.ForeignKey('history.id'))
+    #Many protein in many queries
+    proteins = db.relationship('Protein', secondary='query_has_protein', backref='queries')
 
 def load_query(query_id):
     return db.session.execute(db.select(Query).filter_by(Query_ID=query_id)).scalar_one()

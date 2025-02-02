@@ -8,8 +8,7 @@ Base = declarative_base()
 class Role(db.Model):
     role_id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(Enum('admin', 'user', name='status_enum'), nullable=False)
-
-    #Reference
+    #One role many users
     users = db.relationship('User', backref='role', lazy=True)
 
 

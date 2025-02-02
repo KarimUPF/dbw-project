@@ -6,8 +6,8 @@ class Organism(db.Model):
     scientific_name = db.Column(db.String(100), unique=True, nullable=False)
     common_name = db.Column(db.String(100), nullable=True)
     
-    #Reference
-    proteins = db.relationship('Protein', backref='organism', lazy=True)
+    #One ormganism many proteins
+    proteins = db.relationship('Protein', backref='organism')
 
     def __repr__(self):
         return f"Organism('{self.scientific_name}', '{self.common_name}')"

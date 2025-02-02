@@ -12,11 +12,10 @@ class Protein(db.Model):
     evidence= db.Column(db.Integer,nullable=True)
     database=db.Column(db.String(100), nullable=False)
     
-    #Reference
+    #Many to many
     domains = db.relationship("Domain", secondary='domain_has_protein', backref="protein")
-    ptms = db.relationship('PTM', secondary='protein_has_ptm', backref='proteins')
+    ptms = db.relationship('PTM', secondary='protein_has_ptm', backref='protein')
     #1:N relationship
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     organism_id = db.Column(db.Integer, db.ForeignKey('organism.id'), nullable=False)
     
     def __repr__(self):

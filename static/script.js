@@ -112,7 +112,7 @@ const uniqueProteins = [...new Set(ptmData.map(d => d.gene))];
             .html(`
                 <strong>${protein}</strong><br>
                 PTM: ${ptm.modification} (${ptm.residue})<br>
-                Original Position: ${ptm.original_position}<br>
+                Original Position: ${ptm.position}<br>
                 Normalized Position: ${ptm.normalized_position.toFixed(2)}
             `);
     }

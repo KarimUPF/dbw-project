@@ -2,4 +2,24 @@ body {
     font-family: Arial, sans-serif;
     margin: 20px;
     overflow: hidden;
+    text-align: center;
 }
+
+.container {
+    width: 80%;
+    margin: auto;
+}
+
+.tooltip {
+    position: absolute;
+    background-color: white;
+    border: 1px solid black;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 14px;
+    pointer-events: none;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+
+

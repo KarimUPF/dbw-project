@@ -4,9 +4,10 @@ from models.all_models import *
 
 with app.app_context():
     # Load the JSON file
-    with open("swissprot_data_2.json", "r") as file:  # Ensure correct path
+    with open("uniprot_all.json", "r") as file:  # Ensure correct path
         data = json.load(file)
 
+    print("Data loaded")
     # Extract results
     proteins_data = data.get("results", [])
 
@@ -34,8 +35,6 @@ with app.app_context():
                         subcellular_locations.append(location_name)
 
         subcellular_location_str = ", ".join(subcellular_locations) if subcellular_locations else None
-
-
 
         # Insert Protein
         protein = Protein(
@@ -72,6 +71,10 @@ with app.app_context():
                 else:
                     ptm_type = description
                     residue = "Unknown"
+
+                if ";" in ptm_type:
+                    split = ptm_type.split(";")
+                    ptm_type = split[0]
 
                 ptm = PTM.query.filter_by(type=ptm_type).first()
                 if not ptm:

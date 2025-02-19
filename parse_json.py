@@ -4,7 +4,7 @@ from models.all_models import *
 
 with app.app_context():
     # Load the JSON file
-    with open("swissprot_data.json", "r") as file:  # Ensure correct path
+    with open("swissprot_data_2.json", "r") as file:  # Ensure correct path
         data = json.load(file)
 
     # Extract results

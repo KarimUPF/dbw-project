@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PTM Comparator</title>
+</head>
+<body>
+    <h2>Compare PTMs</h2>
+    <form action="/compare_ptms" method="POST">
+        <label for="protein_id">Protein ID(s) (comma-separated):</label>
+        <input type="text" name="protein_id" required>
+        <br>
+
+        <label for="organism">Organism:</label>
+        <input type="text" name="organism">
+        <br>
+
+        <label for="ptm_type">PTM Type:</label>
+        <input type="text" name="ptm_type">
+        <br>
+
+        <label for="window">Window (0 to 1):</label>
+        <input type="number" name="window" step="0.01" min="0" max="1" required>
+        <br>
+
+        <input type="submit" value="Compare">
+    </form>
+</body>
+</html>

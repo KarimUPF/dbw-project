@@ -5,4 +5,5 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def home():
-    return render_template('test.html', title="Home")
+    return render_template('compare.html', title="Home")
+

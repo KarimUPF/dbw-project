@@ -21,9 +21,13 @@ mail = Mail(app)
 # Import routes AFTER initializing db to avoid circular imports
 from routes.main import main
 from routes.auth import auth
+from routes.browser import ptm_comparator  # Import your PTM comparator
 
+# Register Blueprints
 app.register_blueprint(main)
 app.register_blueprint(auth)
+app.register_blueprint(ptm_comparator)  # Register PTM comparator route
 
 if __name__ == "__main__":
     app.run(debug=True)
+

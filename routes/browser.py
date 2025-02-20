@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template
 from sqlalchemy.orm import sessionmaker
-from models.all_models import db, Protein, PTM, ProteinHasPTM
+from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism  # Ensure Organism is imported
 import numpy as np
+
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
@@ -30,62 +31,120 @@ def calculate_jaccard_index(set1, set2, window):
     union = expanded_set1.union(expanded_set2)
     return len(intersection) / len(union)
 
-# PTM Comparison Route
-@ptm_comparator.route('/compare_ptms', methods=['GET', 'POST'])
+
+
+@ptm_comparator.route('/compare_ptms', methods=['POST'])
 def compare_ptms():
     try:
-        if request.method == 'POST':
-            protein_ids = request.form.get('protein_id')
-            if not protein_ids:
-                return jsonify({"error": "No protein ID provided"}), 400
+        protein_ids = request.form.get('protein_id')
+        ptm_types = request.form.get('ptm_type', '').split(',') if request.form.get('ptm_type') else None
+        organisms = request.form.get('organism', '').split(',') if request.form.get('organism') else None
 
-            protein_ids = protein_ids.split(',')
-            print(f"Protein IDs: {protein_ids}")
+        session = db.session
 
-            organism = request.form.get('organism')
-            ptm_type = request.form.get('ptm_type')
-            window = request.form.get('window')
+        # If no PTM types are selected, default to all PTM types in the database
+        if not ptm_types:
+            ptm_types = [ptm[0] for ptm in session.query(PTM.type).distinct().all()]
 
-            if not window:
-                return jsonify({"error": "Window parameter missing"}), 400
-            window = float(window)
+        # If no organisms are selected, default to all organisms in the database
+        if not organisms:
+            organisms = [org[0] for org in session.query(Organism.scientific_name).distinct().all()]
 
-            session = db.session
-            query_proteins = session.query(Protein).filter(Protein.accession_id.in_(protein_ids)).all()
-            if not query_proteins:
-                return jsonify({"error": "No matching proteins found in the database"}), 404
-            print(f"Query Proteins Found: {len(query_proteins)}")
+        if not ptm_types:
+            return jsonify({"error": "No PTM types available in the database"}), 400
+        if not organisms:
+            return jsonify({"error": "No organisms available in the database"}), 400
 
-            all_proteins = session.query(Protein).all()
-            print(f"Total Proteins in Database: {len(all_proteins)}")
+        results = []
+        protein_ids_list = [pid.strip() for pid in protein_ids.split(',')] if protein_ids else []
 
-            results = []
-            for query_protein in query_proteins:
-                query_ptms = session.query(ProteinHasPTM).filter_by(protein_accession_id=query_protein.accession_id).all()
-                query_normalized = normalize_ptm_positions(query_protein, query_ptms)
-                print(f"Query Protein: {query_protein.accession_id}, PTMs: {query_normalized}")
+        if len(protein_ids_list) > 1:
+            proteins = session.query(Protein).filter(Protein.accession_id.in_(protein_ids_list)).all()
+        else:
+            query_protein_id = protein_ids_list[0] if protein_ids_list else None
 
-                for match_protein in all_proteins:
-                    if query_protein.accession_id == match_protein.accession_id:
-                        continue
-                    match_ptms = session.query(ProteinHasPTM).filter_by(protein_accession_id=match_protein.accession_id).all()
-                    match_normalized = normalize_ptm_positions(match_protein, match_ptms)
-                    print(f"Matching Protein: {match_protein.accession_id}, PTMs: {match_normalized}")
+            proteins_query = session.query(Protein).join(
+                ProteinHasPTM, Protein.accession_id == ProteinHasPTM.protein_accession_id
+            ).join(
+                PTM, ProteinHasPTM.ptm_id == PTM.id
+            ).filter(PTM.type.in_(ptm_types))
 
-                    jaccard = calculate_jaccard_index(set(query_normalized), set(match_normalized), window)
-                    print(f"Jaccard Index for {query_protein.accession_id} vs {match_protein.accession_id}: {jaccard}")
+            if organisms:
+                proteins_query = proteins_query.join(
+                    Organism, Protein.organism_id == Organism.id
+                ).filter(Organism.scientific_name.in_(organisms))
 
-                    results.append({
-                        'query_protein': query_protein.accession_id,
-                        'match_protein': match_protein.accession_id,
-                        'jaccard_index': round(jaccard, 3)
-                    })
+            proteins_dict = {}
 
-            session.close()
-            return jsonify(results)
+            if query_protein_id:
+                user_protein = session.query(Protein).filter(Protein.accession_id == query_protein_id).first()
+                if user_protein:
+                    proteins_dict[query_protein_id] = user_protein
 
-        return render_template('compare.html')
-    
+            for protein in proteins_query.distinct().all():
+                if protein.accession_id not in proteins_dict:
+                    proteins_dict[protein.accession_id] = protein
+
+            proteins = list(proteins_dict.values())
+
+        for protein in proteins:
+            ptm_query = session.query(ProteinHasPTM.position, PTM.type).join(
+                PTM, ProteinHasPTM.ptm_id == PTM.id
+            ).filter(
+                ProteinHasPTM.protein_accession_id == protein.accession_id,
+                PTM.type.in_(ptm_types)  # Retrieve only the selected PTM types
+            )
+
+            ptms = ptm_query.all()
+            ptm_list = [{
+                'position': ptm.position,
+                'percentile_position': round((ptm.position / protein.length) * 100, 2),
+                'type': ptm.type
+            } for ptm in ptms]
+
+            if ptm_list:
+                results.append({
+                    'protein_id': protein.accession_id,
+                    'sequence': protein.sequence,
+                    'ptms': ptm_list
+                })
+
+        session.close()
+        return jsonify(results)
+
     except Exception as e:
         print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500  # Return error in JSON format
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+
+
+
+@ptm_comparator.route('/get_organisms', methods=['GET'])
+def get_organisms():
+    try:
+        session = db.session
+        organisms = session.query(Organism.scientific_name).distinct().all()
+        session.close()
+
+        organism_list = [org[0] for org in organisms]  # Convert to list of strings
+        return jsonify(organism_list)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@ptm_comparator.route('/get_ptm_types', methods=['GET'])
+def get_ptm_types():
+    try:
+        session = db.session
+        ptm_types = session.query(PTM.type).distinct().all()
+        session.close()
+
+        ptm_list = [ptm[0] for ptm in ptm_types]  # Convert to list of strings
+        return jsonify(ptm_list)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -3,6 +3,168 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<h1>Welcome to PTM Nexus!</h1>
-<p>This is a basic Flask template project.</p>
+<section class="title-section">
+    <div class="container d-flex flex-column justify-content-center align-items-center vh-100 text-center">
+        <h1 class="display-4 text-white">Welcome to PTM Nexus!</h1>
+        <p class="lead text-white">This is a basic Flask template project.</p>
+        <a href="#login" class="btn btn-primary mt-3">Get Started</a>  <!-- Scrolls to login -->
+    </div>
+</section>
+
+<section class="Information">
+    <div class="container">
+        <h2 class="display-4 text-white mb-5">What is PTM-nexus?</h2>
+
+        <div class="row">
+            <div class="col-md-4 d-flex flex-column align-items-center">
+            <h3>Objective</h3>
+            <p>
+                PTM-nexus aims to provide a previously non-existent service, a tool to analyse the similarity on post-translational modifications between proteins.
+                To do so this application gives the user the chance to input one or a batch of proteins, and performs a series of calculations to give the top 10 most similar proteins.
+            </p>
+            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+            </div>
+            <div class="col-md-4 d-flex flex-column align-items-center">
+            <h3>Methodology</h3>
+            <p>
+                First the Jaccard index is calculated between the different proteins provided as a batch or between the protein provided and the proteins in our database.
+                Then a 
+            </p>
+            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+            </div>
+            <div class="col-md-4 d-flex flex-column align-items-center">
+            <h3>Parameters</h3>
+            <p>
+                hola
+            </p>
+            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+            </div>
+        </div>
+        </div>
+    </section>
+
+<!-- LOGIN AND SIGNUP SECTION -->
+<section id="login" class="login">
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <!-- Login Form -->
+        <div class="card shadow-lg p-4 rounded-3" id="login-form" style="width: 400px;">
+            <h2 class="text-center mb-4">Login</h2>
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                {{ login_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ login_form.username.label(class="form-label") }}
+                    {{ login_form.username(class="form-control", placeholder="Enter your username") }}
+                </div>
+                <div class="mb-3">
+                    {{ login_form.password.label(class="form-label") }}
+                    {{ login_form.password(class="form-control", placeholder="Enter your password") }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+            
+            <!-- Sign Up and Forgot Password Links -->
+            <div class="mt-3 text-center">
+                <a href="#" id="signup-btn" class="btn btn-outline-secondary w-100 mb-2">Sign Up</a>
+                <a href="{{ url_for('auth.forgot_password') }}" class="text-muted">Forgot Password?</a>
+            </div>
+        </div>
+
+        <!-- Signup Form (initially hidden) -->
+        <div class="card shadow-lg p-4 rounded-3" id="signup-form" style="width: 400px; display: none;">
+            <h2 class="text-center mb-4">Sign Up</h2>
+            <form method="POST" action="{{ url_for('auth.signup') }}">
+                {{ signup_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ signup_form.username.label(class="form-label") }}
+                    {{ signup_form.username(class="form-control", placeholder="Enter your username") }}
+                </div>
+                <div class="mb-3">
+                    {{ signup_form.email.label(class="form-label") }}
+                    {{ signup_form.email(class="form-control", placeholder="Enter your email") }}
+                </div>
+                <div class="mb-3">
+                    {{ signup_form.password.label(class="form-label") }}
+                    {{ signup_form.password(class="form-control", placeholder="Enter your password") }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+            </form>
+            <div class="mt-3 text-center">
+                <a href="#" id="login-btn" class="btn btn-outline-secondary w-100 mb-2">Already have an account? Login</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="Team">
+    <h2 class="display-4 text-white">Meet Our Team</h2>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename = 'karim.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
+                <div style="margin-top: 5;margin-bottom: 4;">
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Karim Hamed</h3></div>
+                <h4 style="margin-top: 10px; margin-bottom: 10px;">Back-end developer</h4>
+                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biomedicine in UIC Barcelona. Experienced in database and website development </p>
+            </div>
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename = 'nuria.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Núria Montalà</h3>
+                <h4 style="margin-top: 10px; margin-bottom: 10px;">Back-end developer</h4>
+                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biology in . Experienced in </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename = 'adam.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Adam Martí</h3>
+                <h4 style="margin-top: 10px; margin-bottom: 10px;">Database developer</h4>
+                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biochemistry in UV Valencia. Proficient in protein structural analysis</p>
+            </div>
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename = 'maider.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Maider Fernandez de Mendiola</h3>
+                <h4 style="margin-top: 10px; margin-bottom: 10px;">Front-end developer</h4>
+                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biology in UPV/EHU Bilbao. Experience in something. </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--Change between login and signup forms-->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const signupBtn = document.getElementById('signup-btn');
+        const loginBtn = document.getElementById('login-btn');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        
+        // Function to show login form
+        function showLoginForm() {
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+        }
+        
+        // Function to show signup form
+        function showSignupForm() {
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+        }
+        
+        // Add event listeners
+        if (signupBtn) {
+            signupBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showSignupForm();
+            });
+        }
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showLoginForm();
+            });
+        }
+    });
+</script>
 {% endblock %}

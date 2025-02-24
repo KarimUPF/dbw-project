@@ -17,26 +17,26 @@ def signup():
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))  # Already logged in
     
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user = User(username=form.username.data, email=form.email.data, password=hashed_password, last_login=datetime.now(), role_id=2)
+    signup_form = RegistrationForm()
+    if signup_form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(signup_form.password.data).decode('utf-8')
+        user = User(username=signup_form.username.data, email=signup_form.email.data, password=hashed_password, last_login=datetime.now(), role_id=2)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You can now log in.', 'success')
         return redirect(url_for('auth.login'))
     
-    return render_template('signup.html', title='Sign Up', form=form)
+    return render_template('signup.html', title='Sign Up', signup_form=signup_form)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))  # Already logged in
 
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user and bcrypt.check_password_hash(user.password, form.password.data):
+    login_form = LoginForm()
+    if login_form.validate_on_submit():
+        user = User.query.filter_by(username=login_form.username.data).first()
+        if user and bcrypt.check_password_hash(user.password, login_form.password.data):
             login_user(user)
             flash('Login successful!', 'success')
             
@@ -46,7 +46,7 @@ def login():
         else:
             flash('Login failed. Check username and password.', 'danger')
 
-    return render_template('login.html', title='Login', form=form)
+    return render_template('login.html', title='Login', login_form=login_form)
 
 @auth.route('/logout')
 @login_required  # Protect logout

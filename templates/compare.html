@@ -102,6 +102,7 @@
     <form id="compare-form" method="POST" action="/compare_ptms">
         <label for="protein_id">Protein ID(s) (comma-separated):</label>
         <input type="text" name="protein_id" id="protein-id" placeholder="C9JLW8, A0JNW5, A1A519" required>
+        <small id="protein-warning" style="color: red; display: none;">Maximum 10 protein IDs allowed.</small>
         <br>
 
         <label for="ptm_type">PTM Type:</label>
@@ -125,7 +126,7 @@
         <div id="window-container">
             <label for="window">Window (0 to 1):</label>
             <div class="input-group">
-                <input type="number" placeholder="PLACEHOLDER" name="window" id="window" step="0.01" min="0" max="1" required>
+                <input type="number" value="0.05" name="window" id="window" step="0.01" min="0.01" max="1" required>
             </div>
         </div>
 
@@ -220,8 +221,15 @@
     
             document.getElementById("protein-id").addEventListener("input", function() {
                 let proteinList = this.value.split(",").map(p => p.trim()).filter(p => p !== ""); 
+                if (proteinList.length > 10) {
+                    document.getElementById("protein-warning").style.display = "block";
+                    this.value = proteinList.slice(0, 10).join(", "); 
+                } else {
+                    document.getElementById("protein-warning").style.display = "none";
+                }
                 organismContainer.classList.toggle("hidden", proteinList.length > 1);
             });
+
         });
     </script>
     

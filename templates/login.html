@@ -7,14 +7,14 @@
     <div class="card shadow-lg p-4 rounded-3" style="width: 400px;">
         <h2 class="text-center mb-4">Login</h2>
         <form method="POST">
-            {{ form.hidden_tag() }}
+            {{ login_form.hidden_tag() }}
             <div class="mb-3">
-                {{ form.username.label(class="form-label") }}
-                {{ form.username(class="form-control", placeholder="Enter your username") }}
+                {{ login_form.username.label(class="form-label") }}
+                {{ login_form.username(class="form-control", placeholder="Enter your username") }}
             </div>
             <div class="mb-3">
-                {{ form.password.label(class="form-label") }}
-                {{ form.password(class="form-control", placeholder="Enter your password") }}
+                {{ login_form.password.label(class="form-label") }}
+                {{ login_form.password(class="form-control", placeholder="Enter your password") }}
             </div>
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>

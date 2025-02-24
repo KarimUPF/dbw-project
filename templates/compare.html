@@ -39,12 +39,7 @@
             font-size: 14px;
         }
 
-        #organism-container, #ptm-container, #window-container {
-            margin-bottom: 15px;
-        }
-
         .selected-list {
-            margin-top: 5px;
             display: flex;
             flex-wrap: wrap;
         }
@@ -106,7 +101,7 @@
     <h2>Compare PTMs</h2>
     <form id="compare-form" method="POST" action="/compare_ptms">
         <label for="protein_id">Protein ID(s) (comma-separated):</label>
-        <input type="text" name="protein_id" id="protein-id" required>
+        <input type="text" name="protein_id" id="protein-id" placeholder="C9JLW8, A0JNW5, A1A519" required>
         <br>
 
         <label for="ptm_type">PTM Type:</label>
@@ -130,7 +125,7 @@
         <div id="window-container">
             <label for="window">Window (0 to 1):</label>
             <div class="input-group">
-                <input type="number" name="window" id="window" step="0.01" min="0" max="1" required>
+                <input type="number" placeholder="PLACEHOLDER" name="window" id="window" step="0.01" min="0" max="1" required>
             </div>
         </div>
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, flash
 from sqlalchemy.orm import sessionmaker
 from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism  # Ensure Organism is imported
 import numpy as np
@@ -96,30 +96,31 @@ def compare_ptms():
             )
 
             ptms = ptm_query.all()
+
+            # If no PTMs found, warn the user and skip this protein
+            if not ptms:
+                flash(f"Protein {protein.accession_id} has no PTMs.")
+                continue
+            
             ptm_list = [{
                 'position': ptm.position,
                 'percentile_position': round((ptm.position / protein.length) * 100, 2),
                 'type': ptm.type
             } for ptm in ptms]
 
-            if ptm_list:
-                results.append({
-                    'protein_id': protein.accession_id,
-                    'sequence': protein.sequence,
-                    'ptms': ptm_list
-                })
 
+            results.append({
+                'protein_id': protein.accession_id,
+                'sequence': protein.sequence,
+                'ptms': ptm_list
+            })
+                
         session.close()
-        return jsonify(results)
+        return render_template('result.html', proteins=results)
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
-
-
-
 
 
 @ptm_comparator.route('/get_organisms', methods=['GET'])

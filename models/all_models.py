@@ -101,7 +101,7 @@ class Query(db.Model):
     parameters = db.Column(db.String(45), nullable=True)
     summary_table = db.Column(BLOB, nullable=True)
     graph = db.Column(BLOB, nullable=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.now(), nullable=False)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id'))
 
     # Many-to-Many with Proteins

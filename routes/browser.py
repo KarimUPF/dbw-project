@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template, flash
+from flask_login import login_required, current_user
 from sqlalchemy.orm import sessionmaker
-from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism  # Ensure Organism is imported
+from models.all_models import Protein, PTM, ProteinHasPTM, Organism, Query, History, QueryHasProtein
+from app import db
 import numpy as np
 
 
@@ -34,6 +36,7 @@ def calculate_jaccard_index(set1, set2, window):
 
 
 @ptm_comparator.route('/compare_ptms', methods=['POST'])
+@login_required
 def compare_ptms():
     try:
         protein_ids = request.form.get('protein_id')
@@ -87,6 +90,9 @@ def compare_ptms():
 
             proteins = list(proteins_dict.values())
 
+        #parameters = [" ".join(organisms), " ".join(ptm_types)] 
+        query = Query(parameters="parameters", summary_table=None, graph=None)
+
         for protein in proteins:
             ptm_query = session.query(ProteinHasPTM.position, PTM.type).join(
                 PTM, ProteinHasPTM.ptm_id == PTM.id
@@ -114,7 +120,21 @@ def compare_ptms():
                 'sequence': protein.sequence,
                 'ptms': ptm_list
             })
+            query_prot = QueryHasProtein(query_id=query.id, protein_accession_id=protein.accession_id)
+            session.add(query_prot)
+
+        session.add(query)
                 
+        # current_user                
+        existing_history = History.query.filter_by(user_id=current_user.id).first()
+        if not existing_history:
+            existing_history = History(user_id=current_user.id)
+            session.add(existing_history)
+        
+        existing_history.queries.append(query)
+        session.add(existing_history)
+        session.commit()
+               
         session.close()
         return render_template('result.html', proteins=results)
 

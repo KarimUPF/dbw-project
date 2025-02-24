@@ -8,16 +8,16 @@
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="mb-3">
-                {{ form.username.label(class="form-label") }}
-                {{ form.username(class="form-control", placeholder="Enter your username") }}
+                {{ signup_form.username.label(class="form-label") }}
+                {{ signup_form.username(class="form-control", placeholder="Enter your username") }}
             </div>
             <div class="mb-3">
-                {{ form.email.label(class="form-label") }}
-                {{ form.email(class="form-control", placeholder="Enter your email") }}
+                {{ signup_form.email.label(class="form-label") }}
+                {{ signup_form.email(class="form-control", placeholder="Enter your email") }}
             </div>
             <div class="mb-3">
-                {{ form.password.label(class="form-label") }}
-                {{ form.password(class="form-control", placeholder="Enter your password") }}
+                {{ signup_form.password.label(class="form-label") }}
+                {{ signup_form.password(class="form-control", placeholder="Enter your password") }}
             </div>
             <button type="submit" class="btn btn-primary w-100">Sign Up</button>
         </form>

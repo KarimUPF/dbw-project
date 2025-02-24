@@ -11,3 +11,7 @@ def home():
     signup_form = RegistrationForm()
     return render_template('index.html', title="Home", login_form=login_form, signup_form=signup_form)
 
+@main.route('/browser')
+def browser():
+    return render_template('compare.html', title="Browser")
+

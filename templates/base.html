@@ -25,6 +25,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.browser') }}">Browser</a>
+                        </li>
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link" href="#login" id="login-link" class="active">Login</a>  {# Scrolls to login section #}

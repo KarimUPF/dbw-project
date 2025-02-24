@@ -4,6 +4,28 @@ from sqlalchemy.orm import sessionmaker
 from models.all_models import Protein, PTM, ProteinHasPTM, Organism, Query, History, QueryHasProtein
 from app import db
 import numpy as np
+from itertools import combinations
+def calculate_jaccard_index(set1, set2, window):
+    """ Compute the Jaccard Index between two sets of normalized PTM positions with a user-defined window size. """
+    set1 = sorted(set(set1))  # Sort to ensure a structured comparison
+    set2 = sorted(set(set2))  # Sort to prevent redundant matching
+    
+    matched = set()  # Keep track of matched elements from set2
+    
+    intersection = 0
+    for a in set1:
+        for b in set2:
+            if abs(a - b) <= window and b not in matched:
+                intersection += 1
+                matched.add(b)  # Ensure each PTM is counted only once
+                  # Move to the next PTM in set1 once a match is found
+
+    # Corrected union calculation
+    union = len(set(set1).union(set(set2)))
+
+    return intersection / union if union > 0 else 0.0
+
+
 
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
@@ -12,26 +34,6 @@ ptm_comparator = Blueprint('ptm_comparator', __name__)
 def normalize_ptm_positions(protein, protein_has_ptm):
     """ Calculate relative positions of PTMs by dividing PTM position by protein length. """
     return [(ptm.position / protein.length, ptm.residue, ptm.ptm_id) for ptm in protein_has_ptm]
-
-
-# Function to calculate Jaccard Index with window tolerance
-def calculate_jaccard_index(set1, set2, window):
-    if not set1 and not set2:
-        return 1.0  # Both are empty
-    elif not set1 or not set2:
-        return 0.0  # One is empty
-
-    expanded_set1 = set()
-    expanded_set2 = set()
-
-    for pos, residue, ptm_type in set1:
-        expanded_set1.update((round(x, 5), residue, ptm_type) for x in np.arange(pos - window, pos + window, 0.01))
-    for pos, residue, ptm_type in set2:
-        expanded_set2.update((round(x, 5), residue, ptm_type) for x in np.arange(pos - window, pos + window, 0.01))
-
-    intersection = expanded_set1.intersection(expanded_set2)
-    union = expanded_set1.union(expanded_set2)
-    return len(intersection) / len(union)
 
 
 
@@ -59,8 +61,9 @@ def compare_ptms():
             return jsonify({"error": "No organisms available in the database"}), 400
 
         results = []
+        missing_ptms = []  # List to track proteins with no PTMs
         protein_ids_list = [pid.strip() for pid in protein_ids.split(',')] if protein_ids else []
-
+        window=float(request.form.get('window'))
         if len(protein_ids_list) > 1:
             proteins = session.query(Protein).filter(Protein.accession_id.in_(protein_ids_list)).all()
         else:
@@ -114,6 +117,22 @@ def compare_ptms():
                 'type': ptm.type
             } for ptm in ptms]
 
+<<<<<<< Updated upstream
+=======
+            if ptm_list:
+                results.append({
+                    'protein_id': protein.accession_id,
+                    'sequence': protein.sequence,
+                    'ptms': ptm_list
+                })
+            else:
+                missing_ptms.append(protein.accession_id)  # Store proteins with no PTMs
+
+        # If only one protein was requested and it has no PTMs, return an error message
+        if len(protein_ids_list) == 1 and missing_ptms:
+            session.close()
+            return jsonify({"error": f"The protein '{missing_ptms[0]}' has no PTMs."}), 400
+>>>>>>> Stashed changes
 
             results.append({
                 'protein_id': protein.accession_id,
@@ -136,13 +155,41 @@ def compare_ptms():
         session.commit()
                
         session.close()
+<<<<<<< Updated upstream
         return render_template('result.html', proteins=results)
+=======
+        
+
+        # Compute Jaccard Index for all possible protein pairs if more than one protein is compared
+        if len(proteins) > 1:
+            jaccard_results = []
+            protein_combinations = list(combinations(results, 2))
+
+            for protein1, protein2 in protein_combinations:
+                norm_positions_1 = [ptm['percentile_position'] / 100 for ptm in protein1['ptms']]
+                norm_positions_2 = [ptm['percentile_position'] / 100 for ptm in protein2['ptms']]
+                jaccard_index = calculate_jaccard_index(norm_positions_1, norm_positions_2, window)
+
+                jaccard_results.append({
+                    'jaccard_index': jaccard_index,
+                    'protein_ids': [protein1['protein_id'], protein2['protein_id']]
+                })
+
+            results.append({'jaccard_indices': jaccard_results})
+
+
+        return jsonify(results)
+>>>>>>> Stashed changes
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 @ptm_comparator.route('/get_organisms', methods=['GET'])
 def get_organisms():
     try:

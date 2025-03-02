@@ -1,218 +1,148 @@
-from flask import Blueprint, request, jsonify, render_template, flash
-from flask_login import login_required, current_user
-from sqlalchemy.orm import sessionmaker
-from models.all_models import Protein, PTM, ProteinHasPTM, Organism, Query, History, QueryHasProtein
-from app import db
-import numpy as np
-from itertools import combinations
-def calculate_jaccard_index(set1, set2, window):
-    """ Compute the Jaccard Index between two sets of normalized PTM positions with a user-defined window size. """
-    set1 = sorted(set(set1))  # Sort to ensure a structured comparison
-    set2 = sorted(set(set2))  # Sort to prevent redundant matching
+from flask import Blueprint, request, jsonify, render_template
+from models.all_models import db, Protein, PTM, ProteinHasPTM
+import subprocess
+from Bio import SeqIO
+from Bio.Align.Applications import ClustalOmegaCommandline
+
+
+
+ptm_comparator = Blueprint('ptm_comparator', __name__)  # Ensure Blueprint name matches
+
+def run_blast(protein_id, session):
+    """Run BLASTP to find the 20 most similar proteins from MySQL."""
+    protein = session.query(Protein).filter_by(accession_id=protein_id).first()
+    if not protein:
+        return []
+
+    query_file = "query.fasta"
+    with open(query_file, "w") as f:
+        f.write(f">{protein.accession_id}\n{protein.sequence}\n")
+
+    blast_output = "blast_results.txt"
+    subprocess.run([
+    "blastp", "-query", query_file, "-db", "my_protein_db",
+    "-outfmt", "6 sseqid pident length evalue",
+    "-max_target_seqs", "50",  # Increase max targets
+    "-out", blast_output
+    ])
+
+
+    hits = []
+    with open(blast_output, "r") as f:
+        for line in f:
+            hits.append(line.strip().split("\t")[0])  # Collect protein IDs
+    return hits
+
+
+def align_sequences(proteins):
+    """Perform multiple sequence alignment with Clustal Omega."""
+    fasta_file = "sequences.fasta"
     
-    matched = set()  # Keep track of matched elements from set2
+    with open(fasta_file, "w") as f:
+        for protein in proteins:
+            f.write(f">{protein.accession_id}\n{protein.sequence}\n")
+
+    aligned_file = "aligned.fasta"
     
-    intersection = 0
-    for a in set1:
-        for b in set2:
-            if abs(a - b) <= window and b not in matched:
-                intersection += 1
-                matched.add(b)  # Ensure each PTM is counted only once
-                  # Move to the next PTM in set1 once a match is found
+    # Use --force to allow overwriting
+    clustal_cline = ClustalOmegaCommandline(infile=fasta_file, outfile=aligned_file, force=True, verbose=True, auto=True)
+    subprocess.run(str(clustal_cline), shell=True)
 
-    # Corrected union calculation
-    union = len(set(set1).union(set(set2)))
-
-    return intersection / union if union > 0 else 0.0
+    return aligned_file
 
 
+def adjust_ptm_positions(sequences, ptm_dict):
+    """
+    Adjust PTM positions based on alignment gaps for all proteins.
+    :param sequences: Dict of {Protein ID: Aligned Sequence}
+    :param ptm_dict: Dict of {Protein ID: {Original Position: PTM Type}}
+    :return: Adjusted PTM positions
+    """
+    adjusted_positions = {}
 
+    for prot_id, aligned_seq in sequences.items():
+        ptm_positions = ptm_dict.get(prot_id, {})
+        new_positions = {}
+        gap_count = 0
 
-ptm_comparator = Blueprint('ptm_comparator', __name__)
+        for i, char in enumerate(aligned_seq):
+            if char == "-":
+                gap_count += 1
+            else:
+                original_pos = i - gap_count
+                if original_pos in ptm_positions:
+                    new_positions[i] = {
+                        "original_position": original_pos,
+                        "new_position": i,
+                        "type": ptm_positions[original_pos]  # Keep type
+                    }
 
-# Function to normalize PTM positions
-def normalize_ptm_positions(protein, protein_has_ptm):
-    """ Calculate relative positions of PTMs by dividing PTM position by protein length. """
-    return [(ptm.position / protein.length, ptm.residue, ptm.ptm_id) for ptm in protein_has_ptm]
+        adjusted_positions[prot_id] = new_positions  # Store adjusted PTM data
+
+    return adjusted_positions
 
 
 
 @ptm_comparator.route('/compare_ptms', methods=['POST'])
-@login_required
-def compare_ptms():
-    try:
-        protein_ids = request.form.get('protein_id')
-        ptm_types = request.form.get('ptm_type', '').split(',') if request.form.get('ptm_type') else None
-        organisms = request.form.get('organism', '').split(',') if request.form.get('organism') else None
+def align_and_update_ptms():
+    """Align proteins and return PTM positions as JSON for an interactive HTML page."""
+    protein_id = request.form.get('protein_id')
+    if not protein_id:
+        return jsonify({"error": "No protein_id provided"}), 400
 
-        session = db.session
+    session = db.session
 
-        # If no PTM types are selected, default to all PTM types in the database
-        if not ptm_types:
-            ptm_types = [ptm[0] for ptm in session.query(PTM.type).distinct().all()]
+    # Run BLAST
+    similar_proteins_ids = run_blast(protein_id, session)
+    similar_proteins = session.query(Protein).filter(Protein.accession_id.in_(similar_proteins_ids)).all()
 
-        # If no organisms are selected, default to all organisms in the database
-        if not organisms:
-            organisms = [org[0] for org in session.query(Organism.scientific_name).distinct().all()]
+    if not similar_proteins:
+        return jsonify({"error": f"No similar proteins found for {protein_id}"}), 400
 
-        if not ptm_types:
-            return jsonify({"error": "No PTM types available in the database"}), 400
-        if not organisms:
-            return jsonify({"error": "No organisms available in the database"}), 400
+    # Include the query protein itself
+    query_protein = session.query(Protein).filter_by(accession_id=protein_id).first()
+    if not query_protein:
+        return jsonify({"error": f"Protein {protein_id} not found"}), 400
 
-        results = []
-        missing_ptms = []  # List to track proteins with no PTMs
-        protein_ids_list = [pid.strip() for pid in protein_ids.split(',')] if protein_ids else []
-        window=float(request.form.get('window'))
-        if len(protein_ids_list) > 1:
-            proteins = session.query(Protein).filter(Protein.accession_id.in_(protein_ids_list)).all()
-        else:
-            query_protein_id = protein_ids_list[0] if protein_ids_list else None
+    proteins_to_align = [query_protein] + similar_proteins
 
-            proteins_query = session.query(Protein).join(
-                ProteinHasPTM, Protein.accession_id == ProteinHasPTM.protein_accession_id
-            ).join(
-                PTM, ProteinHasPTM.ptm_id == PTM.id
-            ).filter(PTM.type.in_(ptm_types))
+    # Run Clustal Omega
+    aligned_file = align_sequences(proteins_to_align)
 
-            if organisms:
-                proteins_query = proteins_query.join(
-                    Organism, Protein.organism_id == Organism.id
-                ).filter(Organism.scientific_name.in_(organisms))
+    # Load aligned sequences
+    sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
 
-            proteins_dict = {}
+    # Collect PTMs
+    ptm_dict = {}
+    for p in proteins_to_align:
+        ptms = session.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
+            ProteinHasPTM.protein_accession_id == p.accession_id
+        ).all()
+        ptm_dict[p.accession_id] = {ptm.position: {"type": ptm.type, "new_position": None} for ptm in ptms}
 
-            if query_protein_id:
-                user_protein = session.query(Protein).filter(Protein.accession_id == query_protein_id).first()
-                if user_protein:
-                    proteins_dict[query_protein_id] = user_protein
+    # Adjust PTM positions with gaps
+    for protein_id, aligned_seq in sequences.items():
+        if protein_id not in ptm_dict:
+            continue
 
-            for protein in proteins_query.distinct().all():
-                if protein.accession_id not in proteins_dict:
-                    proteins_dict[protein.accession_id] = protein
+        ptms = ptm_dict[protein_id]
+        gap_count = 0
+        adjusted_ptms = {}
 
-            proteins = list(proteins_dict.values())
-
-        #parameters = [" ".join(organisms), " ".join(ptm_types)] 
-        query = Query(parameters="parameters", summary_table=None, graph=None)
-
-        for protein in proteins:
-            ptm_query = session.query(ProteinHasPTM.position, PTM.type).join(
-                PTM, ProteinHasPTM.ptm_id == PTM.id
-            ).filter(
-                ProteinHasPTM.protein_accession_id == protein.accession_id,
-                PTM.type.in_(ptm_types)  # Retrieve only the selected PTM types
-            )
-
-            ptms = ptm_query.all()
-
-            # If no PTMs found, warn the user and skip this protein
-            if not ptms:
-                flash(f"Protein {protein.accession_id} has no PTMs.")
-                continue
-            
-            ptm_list = [{
-                'position': ptm.position,
-                'percentile_position': round((ptm.position / protein.length) * 100, 2),
-                'type': ptm.type
-            } for ptm in ptms]
-
-<<<<<<< Updated upstream
-=======
-            if ptm_list:
-                results.append({
-                    'protein_id': protein.accession_id,
-                    'sequence': protein.sequence,
-                    'ptms': ptm_list
-                })
+        for i, char in enumerate(aligned_seq):
+            if char == "-":
+                gap_count += 1
             else:
-                missing_ptms.append(protein.accession_id)  # Store proteins with no PTMs
+                original_pos = i - gap_count
+                if original_pos in ptms:
+                    adjusted_ptms[i] = {
+                        "original_position": original_pos,
+                        "new_position": i,
+                        "type": ptms[original_pos]["type"]
+                    }
 
-        # If only one protein was requested and it has no PTMs, return an error message
-        if len(protein_ids_list) == 1 and missing_ptms:
-            session.close()
-            return jsonify({"error": f"The protein '{missing_ptms[0]}' has no PTMs."}), 400
->>>>>>> Stashed changes
+        ptm_dict[protein_id] = adjusted_ptms  # Update with adjusted positions
 
-            results.append({
-                'protein_id': protein.accession_id,
-                'sequence': protein.sequence,
-                'ptms': ptm_list
-            })
-            query_prot = QueryHasProtein(query_id=query.id, protein_accession_id=protein.accession_id)
-            session.add(query_prot)
+    session.close()
 
-        session.add(query)
-                
-        # current_user                
-        existing_history = History.query.filter_by(user_id=current_user.id).first()
-        if not existing_history:
-            existing_history = History(user_id=current_user.id)
-            session.add(existing_history)
-        
-        existing_history.queries.append(query)
-        session.add(existing_history)
-        session.commit()
-               
-        session.close()
-<<<<<<< Updated upstream
-        return render_template('result.html', proteins=results)
-=======
-        
-
-        # Compute Jaccard Index for all possible protein pairs if more than one protein is compared
-        if len(proteins) > 1:
-            jaccard_results = []
-            protein_combinations = list(combinations(results, 2))
-
-            for protein1, protein2 in protein_combinations:
-                norm_positions_1 = [ptm['percentile_position'] / 100 for ptm in protein1['ptms']]
-                norm_positions_2 = [ptm['percentile_position'] / 100 for ptm in protein2['ptms']]
-                jaccard_index = calculate_jaccard_index(norm_positions_1, norm_positions_2, window)
-
-                jaccard_results.append({
-                    'jaccard_index': jaccard_index,
-                    'protein_ids': [protein1['protein_id'], protein2['protein_id']]
-                })
-
-            results.append({'jaccard_indices': jaccard_results})
-
-
-        return jsonify(results)
->>>>>>> Stashed changes
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-@ptm_comparator.route('/get_organisms', methods=['GET'])
-def get_organisms():
-    try:
-        session = db.session
-        organisms = session.query(Organism.scientific_name).distinct().all()
-        session.close()
-
-        organism_list = [org[0] for org in organisms]  # Convert to list of strings
-        return jsonify(organism_list)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@ptm_comparator.route('/get_ptm_types', methods=['GET'])
-def get_ptm_types():
-    try:
-        session = db.session
-        ptm_types = session.query(PTM.type).distinct().all()
-        session.close()
-
-        ptm_list = [ptm[0] for ptm in ptm_types]  # Convert to list of strings
-        return jsonify(ptm_list)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return render_template("ptm_interactive.html", sequences=sequences, ptm_data=ptm_dict)

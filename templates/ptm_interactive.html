@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive PTM Viewer</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 5px;
+            display: none;
+        }
+        .ptm {
+            stroke: black;
+            stroke-width: 1px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Interactive Post-Translational Modifications Viewer</h2>
+    <svg width="900" height="500"></svg>
+    <div class="tooltip"></div>
+
+    <script>
+        // Get PTM Data from Flask
+        const sequences = {{ sequences | tojson }};
+const ptmData = {{ ptm_data | tojson }};
+    
+const svg = d3.select("svg");
+const margin = { top: 50, right: 20, bottom: 50, left: 150 };
+const numProteins = Object.keys(sequences).length;
+const maxSeqLength = Math.max(...Object.values(sequences).map(seq => seq.length));
+const baseWidth = 800;
+const width = Math.max(baseWidth, maxSeqLength * 2);  // Ensure long sequences are visible
+const height = numProteins * 50 + margin.top + margin.bottom;
+
+svg.attr("width", width + margin.left + margin.right);
+svg.attr("height", height);
+
+const tooltip = d3.select(".tooltip");
+
+const ptmColors = {
+    "Phosphorylation": "blue",
+    "Methylation": "green",
+    "Ubiquitination": "red",
+    "Acetylation": "purple",
+    "Glycosylation": "orange",
+    "Other": "black"
+};
+
+const yScale = d3.scaleBand()
+    .domain(Object.keys(sequences))
+    .range([margin.top, height])
+    .padding(0.5);
+
+svg.selectAll(".protein")
+    .data(Object.keys(sequences))
+    .enter().append("line")
+    .attr("class", "protein")
+    .attr("x1", margin.left)
+    .attr("x2", margin.left + width)  // Extend lines fully
+    .attr("y1", d => yScale(d))
+    .attr("y2", d => yScale(d))
+    .attr("stroke", "black");
+
+svg.selectAll(".protein-label")
+    .data(Object.keys(sequences))
+    .enter().append("text")
+    .attr("class", "protein-label")
+    .attr("x", margin.left - 10)
+    .attr("y", d => yScale(d) + 5)
+    .attr("text-anchor", "end")
+    .text(d => d);
+
+Object.entries(ptmData).forEach(([proteinId, ptms]) => {
+    if (!ptms || Object.keys(ptms).length === 0) return;
+
+    svg.selectAll(`.ptm-${proteinId}`)
+        .data(Object.entries(ptms))
+        .enter().append("circle")
+        .attr("class", "ptm")
+        .attr("cx", d => margin.left + (d[1].new_position / maxSeqLength) * width)  // Normalize positions
+        .attr("cy", yScale(proteinId))
+        .attr("r", 7)
+        .attr("fill", d => ptmColors[d[1].type] || "black")
+        .on("mouseover", function(event, d) {
+            tooltip.style("display", "block")
+                   .style("left", (event.pageX + 10) + "px")
+                   .style("top", (event.pageY - 10) + "px")
+                   .html(`<strong>PTM Type:</strong> ${d[1].type}<br>
+                          <strong>Original Position:</strong> ${d[1].original_position}<br>
+                          <strong>New Position:</strong> ${d[1].new_position}`);
+        })
+        .on("mouseout", function() {
+            tooltip.style("display", "none");
+        });
+
+
+});
+    </script>    
+</body>
+</html>

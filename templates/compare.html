@@ -1,138 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>PTM Comparator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f8f9fa;
-        }
 
-        h2 {
-            text-align: center;
-            color: #333;
-        }
+    {% extends "base.html" %}
 
-        form {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin: auto;
-        }
+    {% block title %}PTM Comparator{% endblock %}
+    
+    {% block content %}
+<div class="background">
+    <body>
+    <h1 style="margin-top: 100px;margin-bottom: 20px;">Compare PTMs</h1>
+        <form id="compare-form" method="POST" action="/compare_ptms" style="margin-bottom: 50px;;">
+            <label for="protein_id">Protein ID(s) (comma-separated):</label>
+            <input type="text" name="protein_id" id="protein-id" placeholder="C9JLW8, A0JNW5, A1A519" required>
+            <small id="protein-warning" style="color: red; display: none;">Maximum 10 protein IDs allowed.</small>
+            <br><br>
 
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 15px;
-            color: #555;
-        }
-
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .selected-list {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        .selected-item {
-            background-color: #007bff;
-            color: white;
-            padding: 6px 10px;
-            margin: 4px;
-            border-radius: 5px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-        }
-
-        .remove-btn {
-            margin-left: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #fff;
-            background-color: #dc3545;
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-size: 12px;
-        }
-
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-            margin-top: 15px;
-            display: block;
-            width: 100%;
-        }
-
-        button:hover {
-            background-color: #218838;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .input-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .input-group input {
-            flex: 1;
-        }
-    </style>
-</head>
-<body>
-    <h2>Compare PTMs</h2>
-    <form id="compare-form" method="POST" action="/compare_ptms">
-        <label for="protein_id">Protein ID(s) (comma-separated):</label>
-        <input type="text" name="protein_id" id="protein-id" placeholder="C9JLW8, A0JNW5, A1A519" required>
-        <small id="protein-warning" style="color: red; display: none;">Maximum 10 protein IDs allowed.</small>
-        <br>
-
-        <label for="ptm_type">PTM Type:</label>
-        <div id="ptm-container">
-            <input type="text" id="ptm-search" placeholder="Search PTM type..." autocomplete="off">
-            <select id="ptm-dropdown" size="5"></select>
-        </div>
-        <div id="selected-ptm-types" class="selected-list"></div>
-        <input type="hidden" name="ptm_type" id="selected-ptm-input">
-        <br>
-
-        <div id="organism-container">
-            <label for="organism">Organism:</label>
-            <input type="text" id="organism-search" placeholder="Search organism..." autocomplete="off">
-            <select id="organism-dropdown" size="5"></select>
-        </div>
-        <div id="selected-organisms" class="selected-list"></div>
-        <input type="hidden" name="organism" id="selected-organism-input">
-        <br>
-
-        <div id="window-container">
-            <label for="window">Window (0 to 1):</label>
-            <div class="input-group">
-                <input type="number" value="0.05" name="window" id="window" step="0.01" min="0.01" max="1" required>
+            <label for="ptm_type">PTM Type:</label>
+            <div id="ptm-container">
+                <input type="text" id="ptm-search" placeholder="Search PTM type..." autocomplete="off">
+                <select id="ptm-dropdown" size="5"></select>
             </div>
-        </div>
+            <div id="selected-ptm-types" class="selected-list"></div>
+            <input type="hidden" name="ptm_type" id="selected-ptm-input">
+            <br><br>
 
-        <button type="submit">Compare</button>
-    </form>
+            <div id="organism-container">
+                <label for="organism">Organism:</label>
+                <input type="text" id="organism-search" placeholder="Search organism..." autocomplete="off">
+                <select id="organism-dropdown" size="5"></select>
+            </div>
+            <div id="selected-organisms" class="selected-list"></div>
+            <input type="hidden" name="organism" id="selected-organism-input">
+            <br>
 
+            <div id="window-container">
+                <label for="window">Window (0 to 1):</label>
+                <div class="input-group">
+                    <input type="number" value="0.05" name="window" id="window" step="0.01" min="0.01" max="1" required>
+                </div>
+            </div>
+            <br>
+
+            <button type="submit">Compare</button>
+        </form>
+</body>
+
+<section class="explanation">
+
+</section>
+</div>
     <script>
         let selectedPtmTypes = [];
         let selectedOrganisms = [];
@@ -233,7 +147,5 @@
         });
     </script>
     
-</body>
-</html>
-
+{% endblock %}
 

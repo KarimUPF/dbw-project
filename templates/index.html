@@ -44,12 +44,13 @@
     </section>
 
 <!-- LOGIN AND SIGNUP SECTION -->
+<section id="signup"></section>
 <section id="login" class="login">
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
         <!-- Login Form -->
-        <div class="card shadow-lg p-4 rounded-3" id="login-form" style="width: 400px;">
+        <div class="card shadow-lg p-4 rounded-3" id="login-form" style="width: 600px;">
             <h2 class="text-center mb-4">Login</h2>
-            <form method="POST" action="{{ url_for('auth.login') }}">
+            <form method="POST" action="{{ url_for('auth.login') }}" style="width: 600px;>
                 {{ login_form.hidden_tag() }}
                 <div class="mb-3">
                     {{ login_form.username.label(class="form-label") }}
@@ -70,9 +71,9 @@
         </div>
 
         <!-- Signup Form (initially hidden) -->
-        <div class="card shadow-lg p-4 rounded-3" id="signup-form" style="width: 400px; display: none;">
+        <div class="card shadow-lg p-4 rounded-3" id="signup-form" style="width: 600px; display: none;">
             <h2 class="text-center mb-4">Sign Up</h2>
-            <form method="POST" action="{{ url_for('auth.signup') }}">
+            <form method="POST" action="{{ url_for('auth.signup') }}" style="width: 600px;">
                 {{ signup_form.hidden_tag() }}
                 <div class="mb-3">
                     {{ signup_form.username.label(class="form-label") }}
@@ -130,41 +131,72 @@
     </div>
 </section>
 
-<!--Change between login and signup forms-->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get elements
-        const signupBtn = document.getElementById('signup-btn');
-        const loginBtn = document.getElementById('login-btn');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        
-        // Function to show login form
-        function showLoginForm() {
-            loginForm.style.display = 'block';
-            signupForm.style.display = 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    // Get elements
+    const signupBtn = document.getElementById('signup-btn');
+    const loginBtn = document.getElementById('login-btn');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const loginNavLink = document.getElementById('login-link');
+    const signupNavLink = document.getElementById('signup-link');
+    
+    // Function to show login form
+    function showLoginForm() {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+    }
+    
+    // Function to show signup form
+    function showSignupForm() {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+    }
+    
+    // Add event listeners for form toggle buttons
+    if (signupBtn) {
+        signupBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showSignupForm();
+        });
+    }
+    
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLoginForm();
+        });
+    }
+    
+    // Add event listeners for navbar links
+    if (loginNavLink) {
+        loginNavLink.addEventListener('click', function() {
+            // Will scroll to #login due to href
+            setTimeout(showLoginForm, 100); // Small delay to ensure it executes after scrolling
+        });
+    }
+    
+    if (signupNavLink) {
+        signupNavLink.addEventListener('click', function() {
+            // Will scroll to #signup due to href
+            setTimeout(showSignupForm, 100); // Small delay to ensure it executes after scrolling
+        });
+    }
+    
+    // Check for hash in URL on page load or hash change
+    function checkHash() {
+        if (window.location.hash === '#signup') {
+            showSignupForm();
+        } else if (window.location.hash === '#login') {
+            showLoginForm();
         }
-        
-        // Function to show signup form
-        function showSignupForm() {
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'block';
-        }
-        
-        // Add event listeners
-        if (signupBtn) {
-            signupBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                showSignupForm();
-            });
-        }
-        
-        if (loginBtn) {
-            loginBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                showLoginForm();
-            });
-        }
-    });
+    }
+    
+    // Check hash on page load
+    checkHash();
+    
+    // Also listen for hashchange events
+    window.addEventListener('hashchange', checkHash);
+});
 </script>
 {% endblock %}

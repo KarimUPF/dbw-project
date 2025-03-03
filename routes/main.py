@@ -15,3 +15,5 @@ def home():
 def browser():
     return render_template('compare.html', title="Browser")
 
+
+

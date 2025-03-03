@@ -1,42 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive PTM Viewer</title>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        .tooltip {
-            position: absolute;
-            background: white;
-            border: 1px solid black;
-            padding: 5px;
-            display: none;
-        }
-        .ptm {
-            stroke: black;
-            stroke-width: 1px;
-        }
-        .heatmap-cell {
-            stroke: white;
-            stroke-width: 1px;
-        }
-        .heatmap-label {
-            font-size: 12px;
-        }
-    </style>
-</head>
+{% extends "base.html" %}
+
+{% block title %}Interactive PTM Viewer{% endblock %}
+
+{% block content %}
+<head> <script src="https://d3js.org/d3.v6.min.js"></script></head>
+
 <body>
-    <h2>Interactive Post-Translational Modifications Viewer</h2>
-    <svg width="900" height="500"></svg>
-    <div class="tooltip"></div>
+    <h1 style="margin-top: 100px; margin-bottom: 30px;">Interactive Post-Translational Modifications Viewer</h1>
+    <div class="scroll-container">
+        <svg width="100%" height="500"></svg>
+    </div>
+    <div class="tooltip" ></div>
     
-    <h3>Jaccard Similarity Heatmap</h3>
-    <svg id="heatmap" width="600" height="600"></svg>
+    <h1 style="margin-top: 30px; margin-bottom: 50px;">Jaccard Similarity Heatmap</h1>
+    <svg id="heatmap" width="600" height="600" style="margin-bottom: 30px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); border-radius: 10px;"></svg>
 
     <script>
         // Get PTM Data from Flask
@@ -202,9 +179,9 @@ heatmapG.selectAll(".col-label")
     </script>    
 
 <div>
-    <div>
-        <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
-        <button id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</button>    </div>
+    <div style="margin-bottom: 100px;">
+        <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download Table (CSV)</a>
+        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>    </div>
     
 </div>
 
@@ -274,4 +251,4 @@ heatmapG.selectAll(".col-label")
 
 
 </body>
-</html>
+{% endblock %}

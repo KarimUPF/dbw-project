@@ -3,17 +3,56 @@
 {% block title %}Interactive PTM Viewer{% endblock %}
 
 {% block content %}
-<head> <script src="https://d3js.org/d3.v6.min.js"></script></head>
+<head> 
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        .ptm-tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .heatmap-tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .ptm-tooltip-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+        }
+        
+        .ptm-tooltip-content {
+            line-height: 1.4;
+        }
+    </style>
+</head>
 
 <body>
     <h1 style="margin-top: 100px; margin-bottom: 30px;">Interactive Post-Translational Modifications Viewer</h1>
     <div class="scroll-container">
         <svg width="100%" height="500"></svg>
     </div>
-    <div class="tooltip" ></div>
+    <div class="ptm-tooltip"></div>
     
     <h1 style="margin-top: 30px; margin-bottom: 50px;">Jaccard Similarity Heatmap</h1>
     <svg id="heatmap" width="600" height="600" style="margin-bottom: 30px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); border-radius: 10px;"></svg>
+    <div class="heatmap-tooltip"></div>
 
     <script>
         // Get PTM Data from Flask
@@ -31,14 +70,17 @@ const height = numProteins * 50 + margin.top + margin.bottom;
 svg.attr("width", width + margin.left + margin.right);
 svg.attr("height", height);
 
-const tooltip = d3.select(".tooltip");
+const ptmTooltip = d3.select(".ptm-tooltip");
+const heatmapTooltip = d3.select(".heatmap-tooltip");
 
 const ptmColors = {
-    "Phosphorylation": "blue",
-    "Methylation": "green",
-    "Ubiquitination": "red",
-    "Acetylation": "purple",
-    "Glycosylation": "orange",
+    "phospho": "blue",
+    "n-acetyl": "green",
+    "sulfo": "red",
+    "n6-acetyl": "purple",
+    "diiodo": "orange",
+    "omega-n-methyl": "brown",
+    "n5-methyl": "pink",
     "Other": "black"
 };
 
@@ -78,15 +120,20 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
         .attr("r", 7)
         .attr("fill", d => ptmColors[d[1].type] || "black")
         .on("mouseover", function(event, d) {
-            tooltip.style("display", "block")
+            ptmTooltip.style("display", "block")
                    .style("left", (event.pageX + 10) + "px")
                    .style("top", (event.pageY - 10) + "px")
-                   .html(`<strong>PTM Type:</strong> ${d[1].type}<br>
-                          <strong>Original Position:</strong> ${d[1].original_position}<br>
-                          <strong>New Position:</strong> ${d[1].new_position}`);
+                   .html(`
+                     <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
+                     <div class="ptm-tooltip-content">
+                       <strong>Type:</strong> ${d[1].type}<br>
+                       <strong>Original Position:</strong> ${d[1].original_position}<br>
+                       <strong>New Position:</strong> ${d[1].new_position}
+                     </div>
+                   `);
         })
         .on("mouseout", function() {
-            tooltip.style("display", "none");
+            ptmTooltip.style("display", "none");
         });
 });
 
@@ -106,8 +153,7 @@ const colorScale = d3.scaleSequential()
 const heatmapG = heatmapSvg.append("g")
     .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
 
-    const userWindowSize = JSON.parse('{{ window_size | default(0.05) | tojson | safe }}');  // Fetch user-defined window size from the backend
-
+const userWindowSize = JSON.parse('{{ window_size | default(0.05) | tojson | safe }}');  // Fetch user-defined window size from the backend
 
 // Replace the existing calculateJaccardIndices function with:
 const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
@@ -142,14 +188,15 @@ proteinIds.forEach((row, i) => {
             .attr("width", cellSize)
             .attr("height", cellSize)
             .attr("fill", colorScale(value))
-            .on("mouseover", function(event) {
-                tooltip.style("display", "block")
+            .on("mouseover", function(event, d) {
+                heatmapTooltip.style("display", "block")
                        .style("left", (event.pageX + 10) + "px")
                        .style("top", (event.pageY - 10) + "px")
-                       .html(`${row} vs ${col}<br>Jaccard: ${value.toFixed(3)}`);
+                       .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                              <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
             })
             .on("mouseout", function() {
-                tooltip.style("display", "none");
+                heatmapTooltip.style("display", "none");
             });
     });
 });
@@ -180,11 +227,43 @@ heatmapG.selectAll(".col-label")
 
 <div>
     <div style="margin-bottom: 100px;">
-        <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download Table (CSV)</a>
-        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>    </div>
+        <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
+        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>    
+    </div>
     
 </div>
 
+<script>
+    document.getElementById("download-csv").addEventListener("click", function() {
+        let csvContent = "Protein 1,Protein 2,Jaccard Index\n";
+        const seenPairs = new Set(); // Track pairs to avoid duplicates
+    
+        // Loop over protein pairs
+        proteinIds.forEach((row, i) => {
+            proteinIds.forEach((col, j) => {
+                if (i <= j) { // Avoid duplicates (A-B, not B-A)
+                    const key = `${row}-${col}`;
+                    const jaccardValue = jaccardIndices[key] || 0.0; // Default to 0 if missing
+    
+                    if (!seenPairs.has(`${col}-${row}`)) { // Avoid reverse duplicates
+                        csvContent += `${row},${col},${jaccardValue.toFixed(3)}\n`;
+                        seenPairs.add(key);
+                    }
+                }
+            });
+        });
+    
+        // Convert to CSV format and trigger download
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "jaccard_indices.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+    </script>
+    
 
 <script>
     document.getElementById("download-heatmap").addEventListener("click", function() {
@@ -246,9 +325,6 @@ heatmapG.selectAll(".col-label")
 
     img.src = url;
 });
-
 </script>
-
-
 </body>
 {% endblock %}

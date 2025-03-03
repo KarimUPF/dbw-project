@@ -90,49 +90,6 @@ def adjust_ptm_positions(sequences, ptm_dict):
 
     return adjusted_positions
 
-def generate_jaccard_csv(jaccard_indices):
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["Protein 1", "Protein 2", "Jaccard Index"])
-    
-    for (prot1, prot2), score in jaccard_indices.items():
-        writer.writerow([prot1, prot2, round(score, 3)])
-        
-    return output.getvalue()
-
-
-
-def generate_heatmap_png(jaccard_indices, protein_ids):
-    """Generate a properly formatted heatmap with Jaccard indices and save as PNG."""
-    plt.figure(figsize=(10, 8))
-    matrix = np.zeros((len(protein_ids), len(protein_ids)))
-
-    for i, p1 in enumerate(protein_ids):
-        for j, p2 in enumerate(protein_ids):
-            key = (p1, p2) if (p1, p2) in jaccard_indices else (p2, p1)
-            matrix[i, j] = jaccard_indices.get(key, 0)
-
-    ax = sns.heatmap(matrix, xticklabels=protein_ids, yticklabels=protein_ids, 
-                     cmap='YlOrRd', annot=False, fmt=".3f", linewidths=0.5, cbar=True)
-
-    # Ensure correct Jaccard index placement
-    for i in range(len(protein_ids)):
-        for j in range(len(protein_ids)):
-            value = matrix[i, j]
-            ax.text(j + 0.5, i + 0.5, f"{value:.3f}", ha='center', va='center', fontsize=12, color='black')
-
-    plt.title('Jaccard Similarity Heatmap', fontsize=14)
-    plt.xticks(rotation=45, ha='right', fontsize=10)
-    plt.yticks(fontsize=10)
-
-    img_data = io.BytesIO()
-    plt.savefig(img_data, format='png', bbox_inches='tight', dpi=300)
-    img_data.seek(0)
-    plt.close()
-
-    return img_data
-
-
 
 @ptm_comparator.route('/get_ptm_types')
 def get_ptm_types():
@@ -239,40 +196,3 @@ def align_and_update_ptms():
         window_size=window_size
     )
 
-
-
-
-@ptm_comparator.route('/download_csv')
-def download_csv():
-    """Download the Jaccard index values as a properly formatted CSV file."""
-    try:
-        # Load Jaccard indices from session
-        jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
-
-        if not jaccard_indices:
-            return jsonify({"error": "No Jaccard index data available. Please run a comparison first."}), 400
-
-        # Fix: Properly parse protein pairs
-        formatted_indices = []
-        for key, value in jaccard_indices.items():
-            try:
-                prot1, prot2 = key.split(', ')
-                formatted_indices.append((prot1.strip(), prot2.strip(), round(value, 3)))
-            except ValueError:
-                continue  # Skip incorrectly formatted entries
-
-        # Generate CSV output
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(["Protein 1", "Protein 2", "Jaccard Index"])
-        writer.writerows(formatted_indices)
-
-        # Return as downloadable file
-        output.seek(0)
-        return send_file(io.BytesIO(output.getvalue().encode('utf-8')),
-                         mimetype='text/csv',
-                         as_attachment=True,
-                         download_name='jaccard_indices.csv')
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to generate CSV: {str(e)}"}), 500

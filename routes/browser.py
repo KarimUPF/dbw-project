@@ -8,7 +8,7 @@ import seaborn as sns
 import numpy as np
 from Bio import SeqIO
 from Bio.Align.Applications import ClustalOmegaCommandline
-from models.all_models import db, Protein, PTM, ProteinHasPTM
+from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism
 from routes.jaccarddef import calculate_ptm_jaccard_with_window
 
 
@@ -124,33 +124,65 @@ def generate_heatmap_png(jaccard_indices, protein_ids):
     
     return img_data
 
+@ptm_comparator.route('/get_ptm_types')
+def get_ptm_types():
+    """Fetch all distinct PTM types from the database."""
+    session_db = db.session
+    ptm_types = session_db.query(PTM.type).distinct().all()
+    session_db.close()
+    return jsonify([ptm[0] for ptm in ptm_types])  # Convert to list
+
+@ptm_comparator.route('/get_organisms')
+def get_organisms():
+    """Fetch all distinct scientific names from the database."""
+    session_db = db.session
+    organisms = session_db.query(Organism.scientific_name).distinct().all()
+    session_db.close()
+    return jsonify([org[0] for org in organisms])  # Convert to list
+
+
 
 @ptm_comparator.route('/compare_ptms', methods=['POST'])
 def align_and_update_ptms():
     """Align proteins and return PTM positions for interactive visualization."""
     protein_ids = request.form.get('protein_id', '').split(',')
     protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
-    print(f"🔍 Received Protein IDs: {protein_ids}")  # Debugging
+
+    selected_ptms = request.form.get('ptm_type', '').split(',')  # Selected PTMs
+    selected_organisms = request.form.get('organism', '').split(',')  # Selected organisms
+
+    print(f"🔍 Received Protein IDs: {protein_ids}")
+    print(f"🧬 Selected PTMs: {selected_ptms}")
+    print(f"🌍 Selected Organisms: {selected_organisms}")
 
     if not protein_ids:
         return jsonify({"error": "No protein IDs provided"}), 400
 
     session_db = db.session  # SQLAlchemy session
 
-    # Check if only one protein ID is provided
-    if len(protein_ids) == 1:
+    if len(protein_ids) == 1 and selected_organisms:
+        # When only one protein is given, filter BLAST results by organism
         protein_id = protein_ids[0]
         similar_proteins_ids = run_blast(protein_id, session_db)
-        protein_ids += similar_proteins_ids
-        print(f"📌 Running BLAST, IDs after BLAST: {protein_ids}")  # Debugging
 
-    # Query the database for the provided protein IDs
-    proteins_to_align = session_db.query(Protein).filter(
-        Protein.accession_id.in_(list(protein_ids))
-    ).all()
+        # Get only proteins from selected organisms
+        proteins_to_align = session_db.query(Protein).filter(
+            Protein.accession_id.in_(similar_proteins_ids),
+            Organism.scientific_name.in_(selected_organisms)
+        ).all()
 
-    # Debugging: Print the results of the query
-    print(f"✅ Proteins Found in DB: {[p.accession_id for p in proteins_to_align]}")  # Debugging
+        # Ensure the input protein is included
+        query_protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
+        if query_protein:
+            proteins_to_align.append(query_protein)
+
+    else:
+        # If multiple proteins are given, just use them as input
+        proteins_to_align = session_db.query(Protein).filter(
+            Protein.accession_id.in_(list(protein_ids))
+        ).all()
+
+    print(f"✅ Proteins Found in DB: {[p.accession_id for p in proteins_to_align]}")
 
     if not proteins_to_align:
         return jsonify({"error": "No proteins found"}), 400
@@ -158,14 +190,19 @@ def align_and_update_ptms():
     aligned_file = align_sequences(proteins_to_align)
     sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
 
-    ptm_dict = {p.accession_id: {ptm.position: {"type": ptm.type} for ptm in session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
-        ProteinHasPTM.protein_accession_id == p.accession_id).all()} for p in proteins_to_align}
+    # Collect PTMs, filtering by selected PTM types
+    ptm_dict = {}
+    for p in proteins_to_align:
+        ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
+            ProteinHasPTM.protein_accession_id == p.accession_id
+        ).all()
+        ptm_dict[p.accession_id] = {
+            ptm.position: {"type": ptm.type} for ptm in ptms if not selected_ptms or ptm.type in selected_ptms
+        }
 
     ptm_data = adjust_ptm_positions(sequences, ptm_dict)
-    
     jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences)
 
-    # Store data in Flask session (not SQLAlchemy session)
     session['jaccard_indices'] = json.dumps({f"{k[0]}-{k[1]}": v for k, v in jaccard_indices.items()})
     session['ptm_data'] = json.dumps(ptm_data)
     session['sequences'] = json.dumps(sequences)
@@ -176,9 +213,8 @@ def align_and_update_ptms():
         "ptm_interactive.html", 
         sequences=sequences, 
         ptm_data=ptm_data,
-        jaccard_indices=jaccard_indices  # Pass to template if needed
+        jaccard_indices=jaccard_indices
     )
-
 
 @ptm_comparator.route('/download_csv')
 def download_csv():

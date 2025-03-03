@@ -131,7 +131,7 @@
         <div id="organism-container">
             <label for="organism">Organism:</label>
             <input type="text" id="organism-search" class="search-box" placeholder="Search organism..." autocomplete="off">
-            <select id="organism-dropdown" size="5"></select>
+            <select id="organism-dropdown" size="5" disabled></select> <!-- Disabled initially -->
         </div>
         <div id="selected-organisms" class="selected-list"></div>
         <input type="hidden" name="organism" id="selected-organism-input">
@@ -146,6 +146,69 @@
 
         <button type="submit">Compare</button>
     </form>
+
+<script>
+    // Fetch PTM types and populate the dropdown
+    fetch('/get_ptm_types')
+        .then(response => response.json())
+        .then(data => {
+            let ptmDropdown = document.querySelector("#ptm-dropdown");
+            data.forEach(ptm => {
+                let option = document.createElement("option");
+                option.value = ptm;
+                option.textContent = ptm;
+                ptmDropdown.appendChild(option);
+            });
+        });
+
+    // Fetch organisms and populate the dropdown
+    fetch('/get_organisms')
+        .then(response => response.json())
+        .then(data => {
+            let organismDropdown = document.querySelector("#organism-dropdown");
+            data.forEach(organism => {
+                let option = document.createElement("option");
+                option.value = organism;
+                option.textContent = organism;
+                organismDropdown.appendChild(option);
+            });
+        });
+
+    // Handle PTM selection
+    document.querySelector("#ptm-dropdown").addEventListener("change", function() {
+        let selectedList = document.querySelector("#selected-ptm-types");
+        let inputHidden = document.querySelector("#selected-ptm-input");
+
+        let selectedOptions = Array.from(this.selectedOptions).map(option => option.value);
+        selectedList.innerHTML = selectedOptions.map(ptm => `<span class="tag">${ptm}</span>`).join(" ");
+        inputHidden.value = selectedOptions.join(",");
+    });
+
+    // Handle organism selection
+    document.querySelector("#organism-dropdown").addEventListener("change", function() {
+        let selectedList = document.querySelector("#selected-organisms");
+        let inputHidden = document.querySelector("#selected-organism-input");
+
+        let selectedOptions = Array.from(this.selectedOptions).map(option => option.value);
+        selectedList.innerHTML = selectedOptions.map(org => `<span class="tag">${org}</span>`).join(" ");
+        inputHidden.value = selectedOptions.join(",");
+    });
+
+    // Disable organism selection if multiple proteins are entered
+    document.querySelector("#protein-id").addEventListener("input", function() {
+        let input = this.value.split(',').map(p => p.trim());
+        let organismDropdown = document.querySelector("#organism-dropdown");
+
+        if (input.length > 1) {
+            organismDropdown.disabled = true;  // Disable organism selection
+            document.querySelector("#selected-organisms").innerHTML = "";
+            document.querySelector("#selected-organism-input").value = "";
+        } else {
+            organismDropdown.disabled = false;  // Enable when single protein is selected
+        }
+    });
+</script>
+
 
     <div class="container mt-4">
         {% with messages = get_flashed_messages(with_categories=True) %}

@@ -39,9 +39,19 @@
             font-size: 14px;
         }
 
+        select {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
         .selected-list {
             display: flex;
             flex-wrap: wrap;
+            min-height: 40px;
+            border: 1px dashed #ccc;
+            padding: 5px;
+            margin-top: 10px;
+            border-radius: 5px;
         }
 
         .selected-item {
@@ -95,6 +105,10 @@
         .input-group input {
             flex: 1;
         }
+        
+        .search-box {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -107,7 +121,7 @@
 
         <label for="ptm_type">PTM Type:</label>
         <div id="ptm-container">
-            <input type="text" id="ptm-search" placeholder="Search PTM type..." autocomplete="off">
+            <input type="text" id="ptm-search" class="search-box" placeholder="Search PTM type..." autocomplete="off">
             <select id="ptm-dropdown" size="5"></select>
         </div>
         <div id="selected-ptm-types" class="selected-list"></div>
@@ -116,7 +130,7 @@
 
         <div id="organism-container">
             <label for="organism">Organism:</label>
-            <input type="text" id="organism-search" placeholder="Search organism..." autocomplete="off">
+            <input type="text" id="organism-search" class="search-box" placeholder="Search organism..." autocomplete="off">
             <select id="organism-dropdown" size="5"></select>
         </div>
         <div id="selected-organisms" class="selected-list"></div>
@@ -160,9 +174,10 @@
                 div.textContent = item;
     
                 const removeBtn = document.createElement("span");
-                removeBtn.textContent = " X";
+                removeBtn.textContent = "×";
                 removeBtn.classList.add("remove-btn");
-                removeBtn.onclick = () => {
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     selectedList.splice(selectedList.indexOf(item), 1);
                     updateSelectedList(selectedList, displayElement, hiddenInput);
                     hiddenInput.value = selectedList.join(",");
@@ -170,6 +185,9 @@
                 div.appendChild(removeBtn);
                 displayElement.appendChild(div);
             });
+            
+            // Update the hidden input value
+            hiddenInput.value = selectedList.join(",");
         }
     
         document.addEventListener("DOMContentLoaded", function() {
@@ -177,33 +195,42 @@
             let ptmDropdown = document.getElementById("ptm-dropdown");
             let organismSearch = document.getElementById("organism-search");
             let organismDropdown = document.getElementById("organism-dropdown");
+            let selectedPtmDisplay = document.getElementById("selected-ptm-types");
+            let selectedOrganismDisplay = document.getElementById("selected-organisms");
     
             let ptmOptions = [];
             let organismOptions = [];
     
-            fetch("/get_ptm_types").then(response => response.json()).then(data => {
-                ptmOptions = data;
-                updateDropdown(ptmDropdown, ptmOptions, selectedPtmTypes, document.getElementById("selected-ptm-types"), selectedPtmInput);
-            });
+            // Fetch PTM types from server
+            fetch("/get_ptm_types")
+                .then(response => response.json())
+                .then(data => {
+                    ptmOptions = data;
+                    updateDropdown(ptmDropdown, ptmOptions);
+                })
+                .catch(error => {
+                    console.error("Error fetching PTM types:", error);
+                });
     
-            fetch("/get_organisms").then(response => response.json()).then(data => {
-                organismOptions = data;
-                updateDropdown(organismDropdown, data, selectedOrganisms, document.getElementById("selected-organisms"), selectedOrganismInput);
-            });
+            // Fetch organism options from server
+            fetch("/get_organisms")
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Retrieved organisms:", data); // Debugging output
+                    organismOptions = data;
+                    updateDropdown(organismDropdown, organismOptions);
+                })
+                .catch(error => {
+                    console.error("Error fetching organisms:", error);
+                });
+
     
-            function updateDropdown(dropdown, options, selectedList, displayElement, hiddenInput) {
+            function updateDropdown(dropdown, options) {
                 dropdown.innerHTML = "";
                 options.forEach(option => {
                     let optElement = document.createElement("option");
                     optElement.value = option;
                     optElement.textContent = option;
-                    optElement.addEventListener("click", function() {
-                        if (!selectedList.includes(option)) {
-                            selectedList.push(option);
-                            updateSelectedList(selectedList, displayElement, hiddenInput);
-                            hiddenInput.value = selectedList.join(",");
-                        }
-                    });
                     dropdown.appendChild(optElement);
                 });
             }
@@ -212,24 +239,48 @@
                 let searchValue = searchInput.value.toLowerCase();
                 dropdown.innerHTML = "";
                 options.forEach(option => {
-                    let optElement = document.createElement("option");
-                    optElement.value = option;
-                    optElement.textContent = option;
-                    dropdown.appendChild(optElement);
-                    if (!option.toLowerCase().includes(searchValue)) {
-                        optElement.style.display = "none";
+                    if (option.toLowerCase().includes(searchValue)) {
+                        let optElement = document.createElement("option");
+                        optElement.value = option;
+                        optElement.textContent = option;
+                        dropdown.appendChild(optElement);
                     }
                 });
             }
     
+            // PTM search filter event
             ptmSearch.addEventListener("input", function() {
                 filterDropdown(ptmSearch, ptmDropdown, ptmOptions);
             });
     
+            // Organism search filter event
             organismSearch.addEventListener("input", function() {
                 filterDropdown(organismSearch, organismDropdown, organismOptions);
             });
+            
+            // PTM selection event
+            ptmDropdown.addEventListener("change", function() {
+                const selectedValue = this.value;
+                if (selectedValue && !selectedPtmTypes.includes(selectedValue)) {
+                    selectedPtmTypes.push(selectedValue);
+                    updateSelectedList(selectedPtmTypes, selectedPtmDisplay, selectedPtmInput);
+                    ptmSearch.value = ""; // Clear search box
+                    filterDropdown(ptmSearch, ptmDropdown, ptmOptions); // Reset dropdown
+                }
+            });
+            
+            // Organism selection event
+            organismDropdown.addEventListener("change", function() {
+                const selectedValue = this.value;
+                if (selectedValue && !selectedOrganisms.includes(selectedValue)) {
+                    selectedOrganisms.push(selectedValue);
+                    updateSelectedList(selectedOrganisms, selectedOrganismDisplay, selectedOrganismInput);
+                    organismSearch.value = ""; // Clear search box
+                    filterDropdown(organismSearch, organismDropdown, organismOptions); // Reset dropdown
+                }
+            });
     
+            // Protein ID validation
             document.getElementById("protein-id").addEventListener("input", function() {
                 let proteinList = this.value.split(",").map(p => p.trim()).filter(p => p !== ""); 
                 if (proteinList.length > 10) {
@@ -238,13 +289,11 @@
                 } else {
                     document.getElementById("protein-warning").style.display = "none";
                 }
+                
+                // Show/hide organism selection based on number of proteins
                 organismContainer.classList.toggle("hidden", proteinList.length > 1);
             });
-
         });
     </script>
-    
 </body>
 </html>
-
-

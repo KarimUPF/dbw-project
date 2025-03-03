@@ -129,29 +129,60 @@ const colorScale = d3.scaleSequential()
 const heatmapG = heatmapSvg.append("g")
     .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
 
-// Calculate Jaccard indices
-#function calculateJaccardIndices() {
-    #const indices = {};
-    #for (let i = 0; i < proteinIds.length; i++) {
-      #for (let j = 0; j < proteinIds.length; j++) {
-            #const id1 = proteinIds[i];
-            #const id2 = proteinIds[j];
-            #if (i === j) {
-           #     indices[`${id1}-${id2}`] = 1;
-            #} else if (i < j) {
-                #const ptms1 = ptmData[id1] || {};
-                #const ptms2 = ptmData[id2] || {};
-                #const positions1 = new Set(Object.keys(ptms1));
-                #const positions2 = new Set(Object.keys(ptms2));
-                #const intersection = new Set([...positions1].filter(x => positions2.has(x)));
-                #const union = new Set([...positions1, ...positions2]);
-                #indices[`${id1}-${id2}`] = intersection.size / union.size;
-                #indices[`${id2}-${id1}`] = indices[`${id1}-${id2}`];
-            #}
-        #}
-    #}
-    #return indices;
+    function calculateJaccardIndices(windowPercentage = 0.05) {
+    const indices = {};
+    const alignmentLength = Math.max(...Object.values(sequences).map(seq => seq.length)); // Get max sequence length
+    const windowSize = alignmentLength * windowPercentage; // Calculate window in absolute positions
+
+    for (let i = 0; i < proteinIds.length; i++) {
+        for (let j = 0; j < proteinIds.length; j++) {
+            const id1 = proteinIds[i];
+            const id2 = proteinIds[j];
+
+            if (i === j) {
+                indices[`${id1}-${id2}`] = 1;
+            } else if (i < j) {
+                const ptms1 = Object.keys(ptmData[id1] || {}).map(Number); // Get positions as numbers
+                const ptms2 = Object.keys(ptmData[id2] || {}).map(Number);
+
+                if (ptms1.length === 0 || ptms2.length === 0) {
+                    indices[`${id1}-${id2}`] = 0; // If no PTMs, Jaccard index is 0
+                    indices[`${id2}-${id1}`] = 0;
+                    continue;
+                }
+
+                let matches = 0;
+                let matchedPositions = new Set(); // Store matched positions in ptms2
+
+                ptms1.forEach(pos1 => {
+                    let closestMatch = null;
+                    let minDistance = Infinity;
+
+                    ptms2.forEach(pos2 => {
+                        const distance = Math.abs(pos1 - pos2);
+                        if (distance <= windowSize && distance < minDistance && !matchedPositions.has(pos2)) {
+                            minDistance = distance;
+                            closestMatch = pos2;
+                        }
+                    });
+
+                    if (closestMatch !== null) {
+                        matches++;
+                        matchedPositions.add(closestMatch); // Prevent multiple matches to the same PTM
+                    }
+                });
+
+                const unionSize = ptms1.length + ptms2.length;
+                const jaccardScore = matches / unionSize;
+
+                indices[`${id1}-${id2}`] = jaccardScore;
+                indices[`${id2}-${id1}`] = jaccardScore;
+            }
+        }
+    }
+    return indices;
 }
+
 
 const jaccardIndices = calculateJaccardIndices();
 
@@ -200,5 +231,10 @@ heatmapG.selectAll(".col-label")
     .text(d => d);
 
     </script>    
+
+<div>
+    <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
+    <a href="{{ url_for('ptm_comparator.download_heatmap') }}" class="btn btn-primary">Download Heatmap</a>
+</div>
 </body>
 </html>

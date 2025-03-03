@@ -1,9 +1,8 @@
+{% extends "base.html" %}
 
-    {% extends "base.html" %}
+{% block title %}PTM Browser{% endblock %}
 
-    {% block title %}PTM Comparator{% endblock %}
-    
-    {% block content %}
+{% block content %}
 <div class="background">
     <body>
     <h1 style="margin-top: 100px;margin-bottom: 20px;">Compare PTMs</h1>
@@ -43,10 +42,91 @@
         </form>
 </body>
 
-<section class="explanation">
+<script>
+    // Fetch PTM types and populate the dropdown
+    fetch('/get_ptm_types')
+        .then(response => response.json())
+        .then(data => {
+            let ptmDropdown = document.querySelector("#ptm-dropdown");
+            data.forEach(ptm => {
+                let option = document.createElement("option");
+                option.value = ptm;
+                option.textContent = ptm;
+                ptmDropdown.appendChild(option);
+            });
+        });
 
-</section>
-</div>
+    // Fetch organisms and populate the dropdown
+    fetch('/get_organisms')
+        .then(response => response.json())
+        .then(data => {
+            let organismDropdown = document.querySelector("#organism-dropdown");
+            data.forEach(organism => {
+                let option = document.createElement("option");
+                option.value = organism;
+                option.textContent = organism;
+                organismDropdown.appendChild(option);
+            });
+        });
+
+    // Handle PTM selection
+    document.querySelector("#ptm-dropdown").addEventListener("change", function() {
+        let selectedList = document.querySelector("#selected-ptm-types");
+        let inputHidden = document.querySelector("#selected-ptm-input");
+
+        let selectedOptions = Array.from(this.selectedOptions).map(option => option.value);
+        selectedList.innerHTML = selectedOptions.map(ptm => `<span class="tag">${ptm}</span>`).join(" ");
+        inputHidden.value = selectedOptions.join(",");
+    });
+
+    // Allow removing selected organisms
+    function updateSelectedList(selectedList, displayElement, hiddenInput) {
+        displayElement.innerHTML = '';
+        selectedList.forEach(item => {
+            const div = document.createElement("div");
+            div.classList.add("selected-item");
+            div.textContent = item;
+
+            const removeBtn = document.createElement("span");
+            removeBtn.textContent = " ×";
+            removeBtn.classList.add("remove-btn");
+            removeBtn.onclick = function () {
+                selectedList.splice(selectedList.indexOf(item), 1);
+                updateSelectedList(selectedList, displayElement, hiddenInput);
+                hiddenInput.value = selectedList.length ? selectedList.join(",") : "";
+            };
+            div.appendChild(removeBtn);
+            displayElement.appendChild(div);
+        });
+
+        hiddenInput.value = selectedList.length ? selectedList.join(",") : "";
+    }
+
+    // Update organism selection with removability
+    document.querySelector("#organism-dropdown").addEventListener("change", function () {
+        const selectedValue = this.value;
+        if (selectedValue && !selectedOrganisms.includes(selectedValue)) {
+            selectedOrganisms.push(selectedValue);
+            updateSelectedList(selectedOrganisms, document.querySelector("#selected-organisms"), document.querySelector("#selected-organism-input"));
+        }
+    });
+
+
+    // Disable organism selection if multiple proteins are entered
+    document.querySelector("#protein-id").addEventListener("input", function() {
+        let input = this.value.split(',').map(p => p.trim());
+        let organismDropdown = document.querySelector("#organism-dropdown");
+
+        if (input.length > 1) {
+            organismDropdown.disabled = true;  // Disable organism selection
+            document.querySelector("#selected-organisms").innerHTML = "";
+            document.querySelector("#selected-organism-input").value = "";
+        } else {
+            organismDropdown.disabled = false;  // Enable when single protein is selected
+        }
+    });
+</script>
+
     <script>
         let selectedPtmTypes = [];
         let selectedOrganisms = [];
@@ -63,9 +143,10 @@
                 div.textContent = item;
     
                 const removeBtn = document.createElement("span");
-                removeBtn.textContent = " X";
+                removeBtn.textContent = "×";
                 removeBtn.classList.add("remove-btn");
-                removeBtn.onclick = () => {
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     selectedList.splice(selectedList.indexOf(item), 1);
                     updateSelectedList(selectedList, displayElement, hiddenInput);
                     hiddenInput.value = selectedList.join(",");
@@ -73,40 +154,53 @@
                 div.appendChild(removeBtn);
                 displayElement.appendChild(div);
             });
+            
+            // Update the hidden input value
+            hiddenInput.value = selectedList.join(",");
         }
     
+        
         document.addEventListener("DOMContentLoaded", function() {
             let ptmSearch = document.getElementById("ptm-search");
             let ptmDropdown = document.getElementById("ptm-dropdown");
             let organismSearch = document.getElementById("organism-search");
             let organismDropdown = document.getElementById("organism-dropdown");
+            let selectedPtmDisplay = document.getElementById("selected-ptm-types");
+            let selectedOrganismDisplay = document.getElementById("selected-organisms");
     
             let ptmOptions = [];
             let organismOptions = [];
     
-            fetch("/get_ptm_types").then(response => response.json()).then(data => {
-                ptmOptions = data;
-                updateDropdown(ptmDropdown, ptmOptions, selectedPtmTypes, document.getElementById("selected-ptm-types"), selectedPtmInput);
-            });
+            // Fetch PTM types from server
+            fetch("/get_ptm_types")
+                .then(response => response.json())
+                .then(data => {
+                    ptmOptions = data;
+                    updateDropdown(ptmDropdown, ptmOptions);
+                })
+                .catch(error => {
+                    console.error("Error fetching PTM types:", error);
+                });
     
-            fetch("/get_organisms").then(response => response.json()).then(data => {
-                organismOptions = data;
-                updateDropdown(organismDropdown, data, selectedOrganisms, document.getElementById("selected-organisms"), selectedOrganismInput);
-            });
+            // Fetch organism options from server
+            fetch("/get_organisms")
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Retrieved organisms:", data); // Debugging output
+                    organismOptions = data;
+                    updateDropdown(organismDropdown, organismOptions);
+                })
+                .catch(error => {
+                    console.error("Error fetching organisms:", error);
+                });
+
     
-            function updateDropdown(dropdown, options, selectedList, displayElement, hiddenInput) {
+            function updateDropdown(dropdown, options) {
                 dropdown.innerHTML = "";
                 options.forEach(option => {
                     let optElement = document.createElement("option");
                     optElement.value = option;
                     optElement.textContent = option;
-                    optElement.addEventListener("click", function() {
-                        if (!selectedList.includes(option)) {
-                            selectedList.push(option);
-                            updateSelectedList(selectedList, displayElement, hiddenInput);
-                            hiddenInput.value = selectedList.join(",");
-                        }
-                    });
                     dropdown.appendChild(optElement);
                 });
             }
@@ -115,24 +209,48 @@
                 let searchValue = searchInput.value.toLowerCase();
                 dropdown.innerHTML = "";
                 options.forEach(option => {
-                    let optElement = document.createElement("option");
-                    optElement.value = option;
-                    optElement.textContent = option;
-                    dropdown.appendChild(optElement);
-                    if (!option.toLowerCase().includes(searchValue)) {
-                        optElement.style.display = "none";
+                    if (option.toLowerCase().includes(searchValue)) {
+                        let optElement = document.createElement("option");
+                        optElement.value = option;
+                        optElement.textContent = option;
+                        dropdown.appendChild(optElement);
                     }
                 });
             }
     
+            // PTM search filter event
             ptmSearch.addEventListener("input", function() {
                 filterDropdown(ptmSearch, ptmDropdown, ptmOptions);
             });
     
+            // Organism search filter event
             organismSearch.addEventListener("input", function() {
                 filterDropdown(organismSearch, organismDropdown, organismOptions);
             });
+            
+            // PTM selection event
+            ptmDropdown.addEventListener("change", function() {
+                const selectedValue = this.value;
+                if (selectedValue && !selectedPtmTypes.includes(selectedValue)) {
+                    selectedPtmTypes.push(selectedValue);
+                    updateSelectedList(selectedPtmTypes, selectedPtmDisplay, selectedPtmInput);
+                    ptmSearch.value = ""; // Clear search box
+                    filterDropdown(ptmSearch, ptmDropdown, ptmOptions); // Reset dropdown
+                }
+            });
+            
+            // Organism selection event
+            organismDropdown.addEventListener("change", function() {
+                const selectedValue = this.value;
+                if (selectedValue && !selectedOrganisms.includes(selectedValue)) {
+                    selectedOrganisms.push(selectedValue);
+                    updateSelectedList(selectedOrganisms, selectedOrganismDisplay, selectedOrganismInput);
+                    organismSearch.value = ""; // Clear search box
+                    filterDropdown(organismSearch, organismDropdown, organismOptions); // Reset dropdown
+                }
+            });
     
+            // Protein ID validation
             document.getElementById("protein-id").addEventListener("input", function() {
                 let proteinList = this.value.split(",").map(p => p.trim()).filter(p => p !== ""); 
                 if (proteinList.length > 10) {
@@ -141,11 +259,11 @@
                 } else {
                     document.getElementById("protein-warning").style.display = "none";
                 }
+                
+                // Show/hide organism selection based on number of proteins
                 organismContainer.classList.toggle("hidden", proteinList.length > 1);
             });
-
         });
     </script>
-    
+</body>
 {% endblock %}
-

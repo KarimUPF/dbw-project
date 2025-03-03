@@ -88,7 +88,7 @@ class Organism(db.Model):
 
 # History and Queries
 class History(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     queries = db.relationship('Query', backref='history', lazy='select')
 
@@ -97,11 +97,11 @@ class History(db.Model):
 
 
 class Query(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     parameters = db.Column(db.String(45), nullable=True)
     summary_table = db.Column(BLOB, nullable=True)
     graph = db.Column(BLOB, nullable=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.now(), nullable=False)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id'))
 
     # Many-to-Many with Proteins

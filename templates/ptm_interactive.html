@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive PTM Viewer</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 5px;
+            display: none;
+        }
+        .ptm {
+            stroke: black;
+            stroke-width: 1px;
+        }
+        .heatmap-cell {
+            stroke: white;
+            stroke-width: 1px;
+        }
+        .heatmap-label {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Interactive Post-Translational Modifications Viewer</h2>
+    <svg width="900" height="500"></svg>
+    <div class="tooltip"></div>
+    
+    <h3>Jaccard Similarity Heatmap</h3>
+    <svg id="heatmap" width="600" height="600"></svg>
+
+    <script>
+        // Get PTM Data from Flask
+        const sequences = {{ sequences | tojson }};
+const ptmData = {{ ptm_data | tojson }};
+    
+const svg = d3.select("svg");
+const margin = { top: 50, right: 20, bottom: 50, left: 150 };
+const numProteins = Object.keys(sequences).length;
+const maxSeqLength = Math.max(...Object.values(sequences).map(seq => seq.length));
+const baseWidth = 800;
+const width = Math.max(baseWidth, maxSeqLength * 2);  // Ensure long sequences are visible
+const height = numProteins * 50 + margin.top + margin.bottom;
+
+svg.attr("width", width + margin.left + margin.right);
+svg.attr("height", height);
+
+const tooltip = d3.select(".tooltip");
+
+const ptmColors = {
+    "Phosphorylation": "blue",
+    "Methylation": "green",
+    "Ubiquitination": "red",
+    "Acetylation": "purple",
+    "Glycosylation": "orange",
+    "Other": "black"
+};
+
+const yScale = d3.scaleBand()
+    .domain(Object.keys(sequences))
+    .range([margin.top, height])
+    .padding(0.5);
+
+svg.selectAll(".protein")
+    .data(Object.keys(sequences))
+    .enter().append("line")
+    .attr("class", "protein")
+    .attr("x1", margin.left)
+    .attr("x2", margin.left + width)  // Extend lines fully
+    .attr("y1", d => yScale(d))
+    .attr("y2", d => yScale(d))
+    .attr("stroke", "black");
+
+svg.selectAll(".protein-label")
+    .data(Object.keys(sequences))
+    .enter().append("text")
+    .attr("class", "protein-label")
+    .attr("x", margin.left - 10)
+    .attr("y", d => yScale(d) + 5)
+    .attr("text-anchor", "end")
+    .text(d => d);
+
+Object.entries(ptmData).forEach(([proteinId, ptms]) => {
+    if (!ptms || Object.keys(ptms).length === 0) return;
+
+    svg.selectAll(`.ptm-${proteinId}`)
+        .data(Object.entries(ptms))
+        .enter().append("circle")
+        .attr("class", "ptm")
+        .attr("cx", d => margin.left + (d[1].new_position / maxSeqLength) * width)  // Normalize positions
+        .attr("cy", yScale(proteinId))
+        .attr("r", 7)
+        .attr("fill", d => ptmColors[d[1].type] || "black")
+        .on("mouseover", function(event, d) {
+            tooltip.style("display", "block")
+                   .style("left", (event.pageX + 10) + "px")
+                   .style("top", (event.pageY - 10) + "px")
+                   .html(`<strong>PTM Type:</strong> ${d[1].type}<br>
+                          <strong>Original Position:</strong> ${d[1].original_position}<br>
+                          <strong>New Position:</strong> ${d[1].new_position}`);
+        })
+        .on("mouseout", function() {
+            tooltip.style("display", "none");
+        });
+});
+
+// Add Jaccard Heatmap
+const heatmapSvg = d3.select("#heatmap");
+const heatmapMargin = { top: 100, right: 50, bottom: 50, left: 100 };
+const heatmapWidth = 600 - heatmapMargin.left - heatmapMargin.right;
+const heatmapHeight = 600 - heatmapMargin.top - heatmapMargin.bottom;
+
+const proteinIds = Object.keys(sequences);
+const cellSize = Math.min(heatmapWidth, heatmapHeight) / proteinIds.length;
+
+const colorScale = d3.scaleSequential()
+    .domain([0, 1])
+    .interpolator(d3.interpolateYlOrRd);
+
+const heatmapG = heatmapSvg.append("g")
+    .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
+
+    const userWindowSize = {{ window_size | default(0.05) | tojson }};  // Fetch user-defined window size from the backend
+
+    function calculateJaccardIndices(windowPercentage = userWindowSize) {
+    const indices = {};
+    const alignmentLength = Math.max(...Object.values(sequences).map(seq => seq.length)); // Get max sequence length
+    const windowSize = alignmentLength * windowPercentage; // Calculate window in absolute positions
+
+    for (let i = 0; i < proteinIds.length; i++) {
+        for (let j = 0; j < proteinIds.length; j++) {
+            const id1 = proteinIds[i];
+            const id2 = proteinIds[j];
+
+            if (i === j) {
+                indices[`${id1}-${id2}`] = 1;
+            } else if (i < j) {
+                const ptms1 = Object.keys(ptmData[id1] || {}).map(Number); // Get positions as numbers
+                const ptms2 = Object.keys(ptmData[id2] || {}).map(Number);
+
+                if (ptms1.length === 0 || ptms2.length === 0) {
+                    indices[`${id1}-${id2}`] = 0; // If no PTMs, Jaccard index is 0
+                    indices[`${id2}-${id1}`] = 0;
+                    continue;
+                }
+
+                let matches = 0;
+                let matchedPositions = new Set(); // Store matched positions in ptms2
+
+                ptms1.forEach(pos1 => {
+                    let closestMatch = null;
+                    let minDistance = Infinity;
+
+                    ptms2.forEach(pos2 => {
+                        const distance = Math.abs(pos1 - pos2);
+                        if (distance <= windowSize && distance < minDistance && !matchedPositions.has(pos2)) {
+                            minDistance = distance;
+                            closestMatch = pos2;
+                        }
+                    });
+
+                    if (closestMatch !== null) {
+                        matches++;
+                        matchedPositions.add(closestMatch); // Prevent multiple matches to the same PTM
+                    }
+                });
+
+                const unionSize = ptms1.length + ptms2.length;
+                const jaccardScore = matches / unionSize;
+
+                indices[`${id1}-${id2}`] = jaccardScore;
+                indices[`${id2}-${id1}`] = jaccardScore;
+            }
+        }
+    }
+    return indices;
+}
+
+
+const jaccardIndices = calculateJaccardIndices();
+
+// Create heatmap cells
+proteinIds.forEach((row, i) => {
+    proteinIds.forEach((col, j) => {
+        heatmapG.append("rect")
+            .attr("class", "heatmap-cell")
+            .attr("x", j * cellSize)
+            .attr("y", i * cellSize)
+            .attr("width", cellSize)
+            .attr("height", cellSize)
+            .attr("fill", colorScale(jaccardIndices[`${row}-${col}`]))
+            .on("mouseover", function(event) {
+                tooltip.style("display", "block")
+                       .style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 10) + "px")
+                       .html(`${row} vs ${col}<br>Jaccard: ${jaccardIndices[`${row}-${col}`].toFixed(3)}`);
+            })
+            .on("mouseout", function() {
+                tooltip.style("display", "none");
+            });
+    });
+});
+
+// Add row labels
+heatmapG.selectAll(".row-label")
+    .data(proteinIds)
+    .enter().append("text")
+    .attr("class", "heatmap-label")
+    .attr("x", -5)
+    .attr("y", (d, i) => i * cellSize + cellSize/2)
+    .attr("text-anchor", "end")
+    .attr("alignment-baseline", "middle")
+    .text(d => d);
+
+// Add column labels
+heatmapG.selectAll(".col-label")
+    .data(proteinIds)
+    .enter().append("text")
+    .attr("class", "heatmap-label")
+    .attr("x", (d, i) => i * cellSize + cellSize/2)
+    .attr("y", -5)
+    .attr("text-anchor", "start")
+    .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize/2}, -5)`)
+    .text(d => d);
+
+    </script>    
+
+<div>
+    <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
+    <a href="{{ url_for('ptm_comparator.download_heatmap') }}" class="btn btn-primary">Download Heatmap</a>
+</div>
+
+
+
+</body>
+</html>

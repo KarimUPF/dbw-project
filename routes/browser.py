@@ -12,7 +12,6 @@ from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism
 from routes.jaccarddef import calculate_ptm_jaccard_with_window
 
 
-
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
 def run_blast(protein_id, session):
@@ -101,28 +100,39 @@ def generate_jaccard_csv(jaccard_indices):
         
     return output.getvalue()
 
+
+
 def generate_heatmap_png(jaccard_indices, protein_ids):
+    """Generate a properly formatted heatmap with Jaccard indices and save as PNG."""
     plt.figure(figsize=(10, 8))
     matrix = np.zeros((len(protein_ids), len(protein_ids)))
-    
+
     for i, p1 in enumerate(protein_ids):
         for j, p2 in enumerate(protein_ids):
-            if i == j:
-                matrix[i,j] = 1.0
-            else:
-                key = (p1, p2) if (p1, p2) in jaccard_indices else (p2, p1)
-                matrix[i,j] = jaccard_indices.get(key, 0)
-    
-    sns.heatmap(matrix, xticklabels=protein_ids, yticklabels=protein_ids, 
-                cmap='YlOrRd', annot=True, fmt='.2f')
-    plt.title('Jaccard Similarity Heatmap')
-    
+            key = (p1, p2) if (p1, p2) in jaccard_indices else (p2, p1)
+            matrix[i, j] = jaccard_indices.get(key, 0)
+
+    ax = sns.heatmap(matrix, xticklabels=protein_ids, yticklabels=protein_ids, 
+                     cmap='YlOrRd', annot=False, fmt=".3f", linewidths=0.5, cbar=True)
+
+    # Ensure correct Jaccard index placement
+    for i in range(len(protein_ids)):
+        for j in range(len(protein_ids)):
+            value = matrix[i, j]
+            ax.text(j + 0.5, i + 0.5, f"{value:.3f}", ha='center', va='center', fontsize=12, color='black')
+
+    plt.title('Jaccard Similarity Heatmap', fontsize=14)
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.yticks(fontsize=10)
+
     img_data = io.BytesIO()
-    plt.savefig(img_data, format='png', bbox_inches='tight')
+    plt.savefig(img_data, format='png', bbox_inches='tight', dpi=300)
     img_data.seek(0)
     plt.close()
-    
+
     return img_data
+
+
 
 @ptm_comparator.route('/get_ptm_types')
 def get_ptm_types():
@@ -148,13 +158,10 @@ def align_and_update_ptms():
     session.pop('jaccard_indices', None)
     session.pop('ptm_data', None)
     session.pop('sequences', None)
-
     
-    """Align proteins and return PTM positions for interactive visualization."""
+    # Get user inputs
     protein_ids = request.form.get('protein_id', '').split(',')
     protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
-
-    # Get user inputs and apply defaults where necessary
     selected_ptms = request.form.get('ptm_type', '').split(',')
     selected_organisms = request.form.get('organism', '').split(',')
     window_size = float(request.form.get('window', '0.05'))  # Default to 0.05
@@ -163,131 +170,109 @@ def align_and_update_ptms():
     selected_ptms = None if selected_ptms == [''] else selected_ptms
     selected_organisms = None if selected_organisms == [''] else selected_organisms
 
-
-    print(f"🔍 Received Protein IDs: {protein_ids}")
-    print(f"🧬 Selected PTMs: {selected_ptms}")
-    print(f"🌍 Selected Organisms: {selected_organisms}")
-
-    if not protein_ids:
-        return jsonify({"error": "No protein IDs provided"}), 400
-
     session_db = db.session  # SQLAlchemy session
-
+    
+    # Unified handling for single or multiple proteins
     if len(protein_ids) == 1:
+        # Single protein case - do BLAST
         protein_id = protein_ids[0]
         similar_proteins_ids = run_blast(protein_id, session_db)
-
-        # Get proteins either from selected organisms or ALL if none selected
+        proteins_to_align = []
+        
+        # Get proteins from BLAST results, filtering by organism if specified
         protein_query = session_db.query(Protein).filter(Protein.accession_id.in_(similar_proteins_ids))
-
         if selected_organisms:
             protein_query = protein_query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
-
         proteins_to_align = protein_query.all()
-
-        # Ensure the input protein is included in alignment
+        
+        # Always include the query protein
         query_protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
         if query_protein and query_protein not in proteins_to_align:
             proteins_to_align.append(query_protein)
-
-        if len(proteins_to_align) > 1:  # Ensure we have multiple proteins
-            aligned_file = align_sequences(proteins_to_align)
-            sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
-
-            ptm_dict = {}
-            for p in proteins_to_align:
-                ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
-                    ProteinHasPTM.protein_accession_id == p.accession_id
-                )
-
-                if selected_ptms:
-                    ptms = ptms.filter(PTM.type.in_(selected_ptms))
-
-                ptms = ptms.all()
-
-                ptm_dict[p.accession_id] = {
-                    ptm.position: {"type": ptm.type} for ptm in ptms
-                }
-
-            ptm_data = adjust_ptm_positions(sequences, ptm_dict)
-            jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
-        else:
-            jaccard_indices = {}  # No comparisons possible
-            sequences = {}
-            ptm_data = {}
-
     else:
-        # If multiple proteins are given, just use them as input
+        # Multiple proteins case - just use the provided proteins
         proteins_to_align = session_db.query(Protein).filter(
             Protein.accession_id.in_(list(protein_ids))
         ).all()
-
-    print(f"✅ Proteins Found in DB: {[p.accession_id for p in proteins_to_align]}")
-
+    
     if not proteins_to_align:
         return jsonify({"error": "No proteins found"}), 400
-
+        
+    # Common code for both cases
     aligned_file = align_sequences(proteins_to_align)
     sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
-
+    
     # Collect PTMs, filtering by selected PTM types
     ptm_dict = {}
     for p in proteins_to_align:
         ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
             ProteinHasPTM.protein_accession_id == p.accession_id
         )
-
+        
         if selected_ptms:
-            ptms = ptms.filter(PTM.type.in_(selected_ptms))  # Apply filter only if PTMs were selected
-
+            ptms = ptms.filter(PTM.type.in_(selected_ptms))
+            
         ptms = ptms.all()
-
+        
         ptm_dict[p.accession_id] = {
-            ptm.position: {"type": ptm.type} for ptm in ptms if not selected_ptms or ptm.type in selected_ptms
+            ptm.position: {"type": ptm.type} for ptm in ptms
         }
-
+    
     ptm_data = adjust_ptm_positions(sequences, ptm_dict)
     jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
-
-
-
-    # Store new data in session
-    # Ensure session storage is always populated
-    if not jaccard_indices:
-        print("⚠ No Jaccard indices calculated. Storing an empty dictionary.")
-
-    session['jaccard_indices'] = json.dumps({f"{k[0]}-{k[1]}": v for k, v in jaccard_indices.items()} if jaccard_indices else {})
-    session['ptm_data'] = json.dumps(ptm_data if ptm_data else {})
-    session['sequences'] = json.dumps(sequences if sequences else {})
-
+    
+    # Store data in session consistently
+    session['jaccard_indices'] = json.dumps({f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()})
+    session['ptm_data'] = json.dumps(ptm_data)
+    session['sequences'] = json.dumps(sequences)
+        
     session_db.close()
+    
+    # Convert tuple keys to strings for JSON serialization
+    formatted_jaccard_indices = {f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()}
 
     return render_template(
         "ptm_interactive.html", 
         sequences=sequences, 
         ptm_data=ptm_data,
-        jaccard_indices=jaccard_indices,
-        window=window_size  # Pass window size
+        jaccard_indices=formatted_jaccard_indices,  # Use the formatted version
+        window_size=window_size
     )
+
+
 
 
 @ptm_comparator.route('/download_csv')
 def download_csv():
-    jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
-    if not jaccard_indices:
-        return jsonify({"error": "No data available. Please run a comparison first."}), 400
-    jaccard_indices = {(k.split('-')[0], k.split('-')[1]): v for k, v in jaccard_indices.items()}  # Convert keys back to tuples
-    csv_data = generate_jaccard_csv(jaccard_indices)
-    return send_file(io.BytesIO(csv_data.encode('utf-8')), mimetype='text/csv', as_attachment=True, download_name='jaccard_indices.csv')
+    """Download the Jaccard index values as a properly formatted CSV file."""
+    try:
+        # Load Jaccard indices from session
+        jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
 
-@ptm_comparator.route('/download_heatmap')
-def download_heatmap():
-    jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
-    sequences = json.loads(session.get('sequences', '{}'))
+        if not jaccard_indices:
+            return jsonify({"error": "No Jaccard index data available. Please run a comparison first."}), 400
 
-    if not jaccard_indices or not sequences:
-        return jsonify({"error": "No data available. Please run a comparison first."}), 400
-    jaccard_indices = {(k.split('-')[0], k.split('-')[1]): v for k, v in jaccard_indices.items()}  # Convert keys back to tuples
-    sequences = json.loads(session.get('sequences', '{}'))
-    heatmap_data = generate_heatmap_png(jaccard_indices, list(sequences.keys()))
-    return send_file(heatmap_data, mimetype='image/png', as_attachment=True, download_name='jaccard_heatmap.png')
+        # Fix: Properly parse protein pairs
+        formatted_indices = []
+        for key, value in jaccard_indices.items():
+            try:
+                prot1, prot2 = key.split(', ')
+                formatted_indices.append((prot1.strip(), prot2.strip(), round(value, 3)))
+            except ValueError:
+                continue  # Skip incorrectly formatted entries
+
+        # Generate CSV output
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Protein 1", "Protein 2", "Jaccard Index"])
+        writer.writerows(formatted_indices)
+
+        # Return as downloadable file
+        output.seek(0)
+        return send_file(io.BytesIO(output.getvalue().encode('utf-8')),
+                         mimetype='text/csv',
+                         as_attachment=True,
+                         download_name='jaccard_indices.csv')
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate CSV: {str(e)}"}), 500

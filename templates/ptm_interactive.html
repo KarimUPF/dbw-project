@@ -40,8 +40,8 @@
 
     <script>
         // Get PTM Data from Flask
-        const sequences = {{ sequences | tojson }};
-const ptmData = {{ ptm_data | tojson }};
+const sequences = JSON.parse('{{ sequences | tojson | safe }}');
+const ptmData = JSON.parse('{{ ptm_data | tojson | safe }}');
     
 const svg = d3.select("svg");
 const margin = { top: 50, right: 20, bottom: 50, left: 150 };
@@ -129,80 +129,47 @@ const colorScale = d3.scaleSequential()
 const heatmapG = heatmapSvg.append("g")
     .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
 
-    const userWindowSize = {{ window_size | default(0.05) | tojson }};  // Fetch user-defined window size from the backend
-
-    function calculateJaccardIndices(windowPercentage = userWindowSize) {
-    const indices = {};
-    const alignmentLength = Math.max(...Object.values(sequences).map(seq => seq.length)); // Get max sequence length
-    const windowSize = alignmentLength * windowPercentage; // Calculate window in absolute positions
-
-    for (let i = 0; i < proteinIds.length; i++) {
-        for (let j = 0; j < proteinIds.length; j++) {
-            const id1 = proteinIds[i];
-            const id2 = proteinIds[j];
-
-            if (i === j) {
-                indices[`${id1}-${id2}`] = 1;
-            } else if (i < j) {
-                const ptms1 = Object.keys(ptmData[id1] || {}).map(Number); // Get positions as numbers
-                const ptms2 = Object.keys(ptmData[id2] || {}).map(Number);
-
-                if (ptms1.length === 0 || ptms2.length === 0) {
-                    indices[`${id1}-${id2}`] = 0; // If no PTMs, Jaccard index is 0
-                    indices[`${id2}-${id1}`] = 0;
-                    continue;
-                }
-
-                let matches = 0;
-                let matchedPositions = new Set(); // Store matched positions in ptms2
-
-                ptms1.forEach(pos1 => {
-                    let closestMatch = null;
-                    let minDistance = Infinity;
-
-                    ptms2.forEach(pos2 => {
-                        const distance = Math.abs(pos1 - pos2);
-                        if (distance <= windowSize && distance < minDistance && !matchedPositions.has(pos2)) {
-                            minDistance = distance;
-                            closestMatch = pos2;
-                        }
-                    });
-
-                    if (closestMatch !== null) {
-                        matches++;
-                        matchedPositions.add(closestMatch); // Prevent multiple matches to the same PTM
-                    }
-                });
-
-                const unionSize = ptms1.length + ptms2.length;
-                const jaccardScore = matches / unionSize;
-
-                indices[`${id1}-${id2}`] = jaccardScore;
-                indices[`${id2}-${id1}`] = jaccardScore;
-            }
-        }
-    }
-    return indices;
-}
+    const userWindowSize = JSON.parse('{{ window_size | default(0.05) | tojson | safe }}');  // Fetch user-defined window size from the backend
 
 
-const jaccardIndices = calculateJaccardIndices();
+// Replace the existing calculateJaccardIndices function with:
+const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
+const jaccardIndices = {};
+
+// Convert Python tuples to JavaScript format
+// Convert Python string format to JavaScript format
+Object.entries(jaccard_indices).forEach(([key, value]) => {
+    const [prot1, prot2] = key.split(', ');
+    // Format the key consistently
+    const cleanKey1 = `${prot1.replace(/['"()]/g, '')}-${prot2.replace(/['"()]/g, '')}`;
+    const cleanKey2 = `${prot2.replace(/['"()]/g, '')}-${prot1.replace(/['"()]/g, '')}`;
+    jaccardIndices[cleanKey1] = value;
+    jaccardIndices[cleanKey2] = value;
+});
+
+// For identical proteins, set the Jaccard index to 1
+proteinIds.forEach(id => {
+    jaccardIndices[`${id}-${id}`] = 1;
+});
 
 // Create heatmap cells
 proteinIds.forEach((row, i) => {
     proteinIds.forEach((col, j) => {
+        const key = `${row}-${col}`;
+        const value = jaccardIndices[key] || 0;
+        
         heatmapG.append("rect")
             .attr("class", "heatmap-cell")
             .attr("x", j * cellSize)
             .attr("y", i * cellSize)
             .attr("width", cellSize)
             .attr("height", cellSize)
-            .attr("fill", colorScale(jaccardIndices[`${row}-${col}`]))
+            .attr("fill", colorScale(value))
             .on("mouseover", function(event) {
                 tooltip.style("display", "block")
                        .style("left", (event.pageX + 10) + "px")
                        .style("top", (event.pageY - 10) + "px")
-                       .html(`${row} vs ${col}<br>Jaccard: ${jaccardIndices[`${row}-${col}`].toFixed(3)}`);
+                       .html(`${row} vs ${col}<br>Jaccard: ${value.toFixed(3)}`);
             })
             .on("mouseout", function() {
                 tooltip.style("display", "none");
@@ -235,10 +202,75 @@ heatmapG.selectAll(".col-label")
     </script>    
 
 <div>
-    <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
-    <a href="{{ url_for('ptm_comparator.download_heatmap') }}" class="btn btn-primary">Download Heatmap</a>
+    <div>
+        <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
+        <button id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</button>    </div>
+    
 </div>
 
+
+<script>
+    document.getElementById("download-heatmap").addEventListener("click", function() {
+    const svgElement = document.getElementById("heatmap");
+    const serializer = new XMLSerializer();
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    // Step 1: Temporarily add Jaccard index labels
+    const heatmapG = d3.select("#heatmap g");
+
+    const tempLabels = []; // Store added labels to remove later
+
+    proteinIds.forEach((row, i) => {
+        proteinIds.forEach((col, j) => {
+            const key = `${row}-${col}`;
+            const value = jaccardIndices[key] || 0;
+
+            // Add text labels (Jaccard values)
+            const label = heatmapG.append("text")
+                .attr("x", j * cellSize + cellSize / 2)
+                .attr("y", i * cellSize + cellSize / 2)
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .attr("fill", "black")
+                .attr("font-size", "12px")
+                .text(value.toFixed(3));
+
+            tempLabels.push(label); // Store label for removal
+        });
+    });
+
+    // Convert the modified SVG to PNG
+    const svgString = serializer.serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = function () {
+        canvas.width = svgElement.clientWidth * 2;  // Increase resolution
+        canvas.height = svgElement.clientHeight * 2;
+        context.fillStyle = "white";  // Ensure white background
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        // Step 2: Remove the temporary labels after download
+        tempLabels.forEach(label => label.remove());
+
+        // Convert to PNG and trigger download
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = "jaccard_heatmap.png";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    };
+
+    img.src = url;
+});
+
+</script>
 
 
 </body>

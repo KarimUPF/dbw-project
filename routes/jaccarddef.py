@@ -1,51 +1,47 @@
 def calculate_ptm_jaccard_with_window(adjusted_positions, sequences, window_percentage=0.05):
     """
     Calculate Jaccard index for PTMs between proteins, considering a sliding window.
-    
+
     Args:
         adjusted_positions: Dict of {Protein ID: {Position: PTM info}}
         sequences: Dict of {Protein ID: Aligned sequence}
         window_percentage: Percentage of sequence length to use as window size
-    
+
     Returns:
         Dict of {(protein1, protein2): jaccard_score}
     """
-    # Get alignment length from first sequence
-    alignment_length = len(next(iter(sequences.values())))
-    window_size = int(alignment_length * window_percentage)
-    
-    # Normalize positions to 0-1 range
-    normalized_ptms = {}
-    for prot_id, ptms in adjusted_positions.items():
-        normalized_ptms[prot_id] = set(pos / alignment_length for pos in ptms.keys())
-    
-    # Calculate Jaccard indices for top 10 proteins
-    protein_ids = list(sequences.keys())[:10]  # Get top 10 proteins
+    alignment_length = len(next(iter(sequences.values())))  # Get alignment length
+    window_size = int(alignment_length * window_percentage)  # Convert to absolute positions
+
+    ptm_sets = {prot_id: set(ptms.keys()) for prot_id, ptms in adjusted_positions.items()}
+
+    protein_ids = list(sequences.keys())
     jaccard_scores = {}
-    
+
     for i in range(len(protein_ids)):
         for j in range(i + 1, len(protein_ids)):
             prot1, prot2 = protein_ids[i], protein_ids[j]
-            
-            # Skip if either protein has no PTMs
-            if not normalized_ptms[prot1] or not normalized_ptms[prot2]:
+
+            ptms1 = ptm_sets.get(prot1, set())
+            ptms2 = ptm_sets.get(prot2, set())
+
+            if not ptms1 or not ptms2:
                 jaccard_scores[(prot1, prot2)] = 0
                 continue
-            
-            # Find matching PTMs within window
-            matches = 0
-            for pos1 in normalized_ptms[prot1]:
-                window_start = max(0, pos1 - (window_size/2)/alignment_length)
-                window_end = min(1, pos1 + (window_size/2)/alignment_length)
-                
-                for pos2 in normalized_ptms[prot2]:
-                    if window_start <= pos2 <= window_end:
-                        matches += 1
-                        break
-            
-            # Calculate Jaccard index
-            union = len(normalized_ptms[prot1]) + len(normalized_ptms[prot2])
-            jaccard_score = matches / union if union > 0 else 0
+
+            # Fix: Track matches more accurately
+            matched_ptms = set()
+            for pos1 in ptms1:
+                for pos2 in ptms2:
+                    if abs(pos1 - pos2) <= window_size:
+                        matched_ptms.add((pos1, pos2))
+                        break  # Only count the closest match
+
+            # Fix: calculate intersection based on matched pairs
+            intersection_size = len(matched_ptms)
+            # Fix: union should be total unique PTMs minus duplicates
+            union_size = len(ptms1 | ptms2) 
+            jaccard_score = intersection_size / union_size if union_size > 0 else 0
             jaccard_scores[(prot1, prot2)] = jaccard_score
-    
+
     return jaccard_scores

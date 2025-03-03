@@ -129,7 +129,9 @@ const colorScale = d3.scaleSequential()
 const heatmapG = heatmapSvg.append("g")
     .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
 
-    function calculateJaccardIndices(windowPercentage = 0.05) {
+    const userWindowSize = {{ window_size | default(0.05) | tojson }};  // Fetch user-defined window size from the backend
+
+    function calculateJaccardIndices(windowPercentage = userWindowSize) {
     const indices = {};
     const alignmentLength = Math.max(...Object.values(sequences).map(seq => seq.length)); // Get max sequence length
     const windowSize = alignmentLength * windowPercentage; // Calculate window in absolute positions
@@ -236,6 +238,7 @@ heatmapG.selectAll(".col-label")
     <a href="{{ url_for('ptm_comparator.download_csv') }}" class="btn btn-primary">Download CSV</a>
     <a href="{{ url_for('ptm_comparator.download_heatmap') }}" class="btn btn-primary">Download Heatmap</a>
 </div>
+
 
 
 </body>

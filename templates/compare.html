@@ -184,15 +184,38 @@
         inputHidden.value = selectedOptions.join(",");
     });
 
-    // Handle organism selection
-    document.querySelector("#organism-dropdown").addEventListener("change", function() {
-        let selectedList = document.querySelector("#selected-organisms");
-        let inputHidden = document.querySelector("#selected-organism-input");
+    // Allow removing selected organisms
+    function updateSelectedList(selectedList, displayElement, hiddenInput) {
+        displayElement.innerHTML = '';
+        selectedList.forEach(item => {
+            const div = document.createElement("div");
+            div.classList.add("selected-item");
+            div.textContent = item;
 
-        let selectedOptions = Array.from(this.selectedOptions).map(option => option.value);
-        selectedList.innerHTML = selectedOptions.map(org => `<span class="tag">${org}</span>`).join(" ");
-        inputHidden.value = selectedOptions.join(",");
+            const removeBtn = document.createElement("span");
+            removeBtn.textContent = " ×";
+            removeBtn.classList.add("remove-btn");
+            removeBtn.onclick = function () {
+                selectedList.splice(selectedList.indexOf(item), 1);
+                updateSelectedList(selectedList, displayElement, hiddenInput);
+                hiddenInput.value = selectedList.length ? selectedList.join(",") : "";
+            };
+            div.appendChild(removeBtn);
+            displayElement.appendChild(div);
+        });
+
+        hiddenInput.value = selectedList.length ? selectedList.join(",") : "";
+    }
+
+    // Update organism selection with removability
+    document.querySelector("#organism-dropdown").addEventListener("change", function () {
+        const selectedValue = this.value;
+        if (selectedValue && !selectedOrganisms.includes(selectedValue)) {
+            selectedOrganisms.push(selectedValue);
+            updateSelectedList(selectedOrganisms, document.querySelector("#selected-organisms"), document.querySelector("#selected-organism-input"));
+        }
     });
+
 
     // Disable organism selection if multiple proteins are entered
     document.querySelector("#protein-id").addEventListener("input", function() {
@@ -253,6 +276,7 @@
             hiddenInput.value = selectedList.join(",");
         }
     
+        
         document.addEventListener("DOMContentLoaded", function() {
             let ptmSearch = document.getElementById("ptm-search");
             let ptmDropdown = document.getElementById("ptm-dropdown");

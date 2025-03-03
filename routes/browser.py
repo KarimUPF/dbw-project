@@ -144,12 +144,25 @@ def get_organisms():
 
 @ptm_comparator.route('/compare_ptms', methods=['POST'])
 def align_and_update_ptms():
+    # Clear old session data
+    session.pop('jaccard_indices', None)
+    session.pop('ptm_data', None)
+    session.pop('sequences', None)
+
+    
     """Align proteins and return PTM positions for interactive visualization."""
     protein_ids = request.form.get('protein_id', '').split(',')
     protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
 
-    selected_ptms = request.form.get('ptm_type', '').split(',')  # Selected PTMs
-    selected_organisms = request.form.get('organism', '').split(',')  # Selected organisms
+    # Get user inputs and apply defaults where necessary
+    selected_ptms = request.form.get('ptm_type', '').split(',')
+    selected_organisms = request.form.get('organism', '').split(',')
+    window_size = float(request.form.get('window', '0.05'))  # Default to 0.05
+
+    # If no PTM or organism is selected, consider all of them
+    selected_ptms = None if selected_ptms == [''] else selected_ptms
+    selected_organisms = None if selected_organisms == [''] else selected_organisms
+
 
     print(f"🔍 Received Protein IDs: {protein_ids}")
     print(f"🧬 Selected PTMs: {selected_ptms}")
@@ -160,21 +173,48 @@ def align_and_update_ptms():
 
     session_db = db.session  # SQLAlchemy session
 
-    if len(protein_ids) == 1 and selected_organisms:
-        # When only one protein is given, filter BLAST results by organism
+    if len(protein_ids) == 1:
         protein_id = protein_ids[0]
         similar_proteins_ids = run_blast(protein_id, session_db)
 
-        # Get only proteins from selected organisms
-        proteins_to_align = session_db.query(Protein).filter(
-            Protein.accession_id.in_(similar_proteins_ids),
-            Organism.scientific_name.in_(selected_organisms)
-        ).all()
+        # Get proteins either from selected organisms or ALL if none selected
+        protein_query = session_db.query(Protein).filter(Protein.accession_id.in_(similar_proteins_ids))
 
-        # Ensure the input protein is included
+        if selected_organisms:
+            protein_query = protein_query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
+
+        proteins_to_align = protein_query.all()
+
+        # Ensure the input protein is included in alignment
         query_protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
-        if query_protein:
+        if query_protein and query_protein not in proteins_to_align:
             proteins_to_align.append(query_protein)
+
+        if len(proteins_to_align) > 1:  # Ensure we have multiple proteins
+            aligned_file = align_sequences(proteins_to_align)
+            sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
+
+            ptm_dict = {}
+            for p in proteins_to_align:
+                ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
+                    ProteinHasPTM.protein_accession_id == p.accession_id
+                )
+
+                if selected_ptms:
+                    ptms = ptms.filter(PTM.type.in_(selected_ptms))
+
+                ptms = ptms.all()
+
+                ptm_dict[p.accession_id] = {
+                    ptm.position: {"type": ptm.type} for ptm in ptms
+                }
+
+            ptm_data = adjust_ptm_positions(sequences, ptm_dict)
+            jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
+        else:
+            jaccard_indices = {}  # No comparisons possible
+            sequences = {}
+            ptm_data = {}
 
     else:
         # If multiple proteins are given, just use them as input
@@ -195,17 +235,30 @@ def align_and_update_ptms():
     for p in proteins_to_align:
         ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
             ProteinHasPTM.protein_accession_id == p.accession_id
-        ).all()
+        )
+
+        if selected_ptms:
+            ptms = ptms.filter(PTM.type.in_(selected_ptms))  # Apply filter only if PTMs were selected
+
+        ptms = ptms.all()
+
         ptm_dict[p.accession_id] = {
             ptm.position: {"type": ptm.type} for ptm in ptms if not selected_ptms or ptm.type in selected_ptms
         }
 
     ptm_data = adjust_ptm_positions(sequences, ptm_dict)
-    jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences)
+    jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
 
-    session['jaccard_indices'] = json.dumps({f"{k[0]}-{k[1]}": v for k, v in jaccard_indices.items()})
-    session['ptm_data'] = json.dumps(ptm_data)
-    session['sequences'] = json.dumps(sequences)
+
+
+    # Store new data in session
+    # Ensure session storage is always populated
+    if not jaccard_indices:
+        print("⚠ No Jaccard indices calculated. Storing an empty dictionary.")
+
+    session['jaccard_indices'] = json.dumps({f"{k[0]}-{k[1]}": v for k, v in jaccard_indices.items()} if jaccard_indices else {})
+    session['ptm_data'] = json.dumps(ptm_data if ptm_data else {})
+    session['sequences'] = json.dumps(sequences if sequences else {})
 
     session_db.close()
 
@@ -213,12 +266,16 @@ def align_and_update_ptms():
         "ptm_interactive.html", 
         sequences=sequences, 
         ptm_data=ptm_data,
-        jaccard_indices=jaccard_indices
+        jaccard_indices=jaccard_indices,
+        window=window_size  # Pass window size
     )
+
 
 @ptm_comparator.route('/download_csv')
 def download_csv():
     jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
+    if not jaccard_indices:
+        return jsonify({"error": "No data available. Please run a comparison first."}), 400
     jaccard_indices = {(k.split('-')[0], k.split('-')[1]): v for k, v in jaccard_indices.items()}  # Convert keys back to tuples
     csv_data = generate_jaccard_csv(jaccard_indices)
     return send_file(io.BytesIO(csv_data.encode('utf-8')), mimetype='text/csv', as_attachment=True, download_name='jaccard_indices.csv')
@@ -226,6 +283,10 @@ def download_csv():
 @ptm_comparator.route('/download_heatmap')
 def download_heatmap():
     jaccard_indices = json.loads(session.get('jaccard_indices', '{}'))
+    sequences = json.loads(session.get('sequences', '{}'))
+
+    if not jaccard_indices or not sequences:
+        return jsonify({"error": "No data available. Please run a comparison first."}), 400
     jaccard_indices = {(k.split('-')[0], k.split('-')[1]): v for k, v in jaccard_indices.items()}  # Convert keys back to tuples
     sequences = json.loads(session.get('sequences', '{}'))
     heatmap_data = generate_heatmap_png(jaccard_indices, list(sequences.keys()))

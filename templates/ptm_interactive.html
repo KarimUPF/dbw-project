@@ -387,5 +387,214 @@ heatmapG.selectAll(".col-label")
     img.src = url;
 });
 </script>
+
+<!-- NEW CODE: Phylogenetic Tree Section -->
+<script>
+// Create a new section for the phylogenetic tree
+const treeContainer = d3.select("body").append("div")
+    .attr("style", "margin-top: 50px; margin-bottom: 100px;")
+    .html(`
+        <h1 style="margin-top: 30px; margin-bottom: 30px;">Phylogenetic Tree Based on Jaccard Similarity</h1>
+        <svg id="phylotree" width="900" height="600" style="margin-bottom: 30px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); border-radius: 10px;"></svg>
+        <div style="margin: 20px auto; text-align: center;">
+            <a id="download-tree" class="btn btn-primary">Download Tree (PNG)</a>
+        </div>
+    `);
+
+// Create the phylogenetic tree
+const treeSvg = d3.select("#phylotree");
+const treeMargin = { top: 50, right: 150, bottom: 50, left: 150 };
+const treeWidth = 900 - treeMargin.left - treeMargin.right;
+const treeHeight = 600 - treeMargin.top - treeMargin.bottom;
+
+const treeG = treeSvg.append("g")
+    .attr("transform", `translate(${treeMargin.left},${treeMargin.top})`);
+
+// Convert Jaccard indices to distances (1 - Jaccard index)
+const distanceMatrix = [];
+proteinIds.forEach((protein1, i) => {
+    distanceMatrix[i] = [];
+    proteinIds.forEach((protein2, j) => {
+        const key = `${protein1}-${protein2}`;
+        const jaccard = jaccardIndices[key] || 0;
+        // Convert similarity to distance (1 - similarity)
+        distanceMatrix[i][j] = 1 - jaccard;
+    });
+});
+
+// Hierarchical clustering using UPGMA (Unweighted Pair Group Method with Arithmetic Mean)
+function upgma(distMatrix, labels) {
+    const n = distMatrix.length;
+    let clusters = labels.map((label, i) => ({
+        name: label,
+        children: [],
+        leaf: true,
+        index: i,
+        height: 0
+    }));
+    
+    let currentDistMatrix = [...distMatrix.map(row => [...row])];
+    
+    // Iteratively merge closest clusters
+    for (let step = 0; step < n - 1; step++) {
+        // Find minimum distance
+        let minDist = Infinity;
+        let minI = -1;
+        let minJ = -1;
+        
+        for (let i = 0; i < currentDistMatrix.length; i++) {
+            for (let j = i + 1; j < currentDistMatrix[i].length; j++) {
+                if (currentDistMatrix[i][j] < minDist) {
+                    minDist = currentDistMatrix[i][j];
+                    minI = i;
+                    minJ = j;
+                }
+            }
+        }
+        
+        // Create new merged cluster
+        const cluster1 = clusters[minI];
+        const cluster2 = clusters[minJ];
+        
+        const newCluster = {
+            name: `Node ${n + step}`,
+            children: [cluster1, cluster2],
+            leaf: false,
+            height: minDist / 2
+        };
+        
+        // Update height for visualization
+        if (cluster1.leaf) cluster1.height = minDist / 2;
+        if (cluster2.leaf) cluster2.height = minDist / 2;
+        
+        // Update clusters array
+        clusters = clusters.filter((_, i) => i !== minI && i !== minJ);
+        clusters.push(newCluster);
+        
+        // Update distance matrix
+        const newRow = [];
+        for (let i = 0; i < currentDistMatrix.length; i++) {
+            if (i !== minI && i !== minJ) {
+                // Calculate new distance as average of distances
+                const newDist = (currentDistMatrix[minI][i] + currentDistMatrix[minJ][i]) / 2;
+                newRow.push(newDist);
+            }
+        }
+        
+        currentDistMatrix = currentDistMatrix
+            .filter((_, i) => i !== minI && i !== minJ)
+            .map(row => row.filter((_, j) => j !== minI && j !== minJ));
+        
+        // Add new row and column
+        currentDistMatrix.forEach((row, i) => {
+            row.push(newRow[i]);
+        });
+        newRow.push(0);
+        currentDistMatrix.push(newRow);
+    }
+    
+    return clusters[0]; // Return the root of the tree
+}
+
+// Perform UPGMA clustering
+const treeData = upgma(distanceMatrix, proteinIds);
+
+// Create hierarchical layout
+const treeLayout = d3.cluster()
+    .size([treeHeight, treeWidth - 200]);
+
+// Convert the UPGMA result to d3 hierarchy format
+const root = d3.hierarchy(treeData);
+
+// Calculate the position of each node
+treeLayout(root);
+
+// Draw the links
+const linkGenerator = d3.linkHorizontal()
+    .x(d => d.y)
+    .y(d => d.x);
+
+treeG.selectAll(".tree-link")
+    .data(root.links())
+    .enter().append("path")
+    .attr("class", "tree-link")
+    .attr("d", linkGenerator)
+    .attr("fill", "none")
+    .attr("stroke", "#4A90E2")  // Softer blue for links
+    .attr("stroke-width", 2)
+    .attr("stroke-opacity", 0.8);
+
+
+// Draw the nodes
+treeG.selectAll(".tree-node")
+    .data(root.descendants())
+    .enter().append("circle")
+    .attr("class", "tree-node")
+    .attr("cx", d => d.y)
+    .attr("cy", d => d.x)
+    .attr("r", d => d.children ? 6 : 4)  // Larger for internal nodes
+    .attr("fill", d => d.children ? "#FF7F50" : "#4682B4") // Different colors for clusters
+    .attr("stroke", "black")
+    .attr("stroke-width", 0.5);
+
+// Add labels to leaf nodes
+treeG.selectAll(".tree-label")
+    .data(root.leaves())
+    .enter().append("text")
+    .attr("class", "tree-label")
+    .attr("x", d => d.y + 10)
+    .attr("y", d => d.x + 4)
+    .text(d => d.data.name)
+    .attr("font-size", "14px")  // Increase font size
+    .attr("font-family", "Arial, sans-serif")
+    .attr("fill", "#333")
+    .attr("font-weight", "bold");
+
+const treeTooltip = d3.select("body").append("div")
+    .attr("class", "ptm-tooltip")
+    .style("display", "none");
+
+treeG.selectAll(".tree-node")
+    .on("mouseover", function(event, d) {
+        treeTooltip.style("display", "block")
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 10) + "px")
+            .html(`<strong>${d.data.name}</strong><br>Cluster Height: ${d.data.height.toFixed(2)}`);
+    })
+    .on("mouseout", () => treeTooltip.style("display", "none"));
+
+// Add download functionality for the phylogenetic tree
+document.getElementById("download-tree").addEventListener("click", function() {
+    const svgElement = document.getElementById("phylotree");
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    const img = new Image();
+    
+    img.onload = function() {
+        canvas.width = svgElement.clientWidth * 2;  // Increase resolution
+        canvas.height = svgElement.clientHeight * 2;
+        context.fillStyle = "white";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = "phylogenetic_tree.png";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    };
+    
+    img.src = url;
+});
+</script>
+
 </body>
 {% endblock %}

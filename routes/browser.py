@@ -196,3 +196,10 @@ def align_and_update_ptms():
         window_size=window_size
     )
 
+
+
+@ptm_comparator.route('/download_fasta', methods=['GET'])
+def download_fasta():
+    fasta_file_path = "aligned.fasta"  
+    return send_file(fasta_file_path, as_attachment=True, download_name="aligned.fasta")
+

@@ -49,93 +49,154 @@
         <svg width="100%" height="500"></svg>
     </div>
     <div class="ptm-tooltip"></div>
+
+    <div style="margin: 40px auto; text-align: center;">
+        <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
+    </div>
     
     <h1 style="margin-top: 30px; margin-bottom: 50px;">Jaccard Similarity Heatmap</h1>
     <svg id="heatmap" width="600" height="600" style="margin-bottom: 30px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); border-radius: 10px;"></svg>
     <div class="heatmap-tooltip"></div>
 
     <script>
-        // Get PTM Data from Flask
+
+// Fetch PTM and sequence alignment data from Flask
 const sequences = JSON.parse('{{ sequences | tojson | safe }}');
 const ptmData = JSON.parse('{{ ptm_data | tojson | safe }}');
-    
+
 const svg = d3.select("svg");
 const margin = { top: 50, right: 20, bottom: 50, left: 150 };
 const numProteins = Object.keys(sequences).length;
 const maxSeqLength = Math.max(...Object.values(sequences).map(seq => seq.length));
 const baseWidth = 800;
-const width = Math.max(baseWidth, maxSeqLength * 2);  // Ensure long sequences are visible
-const height = numProteins * 50 + margin.top + margin.bottom;
+const width = Math.max(baseWidth, maxSeqLength * 12);  // Adjust width for sequence length
+const height = numProteins * 80 + margin.top + margin.bottom;  // Increased height for PTMs
 
 svg.attr("width", width + margin.left + margin.right);
 svg.attr("height", height);
 
-const ptmTooltip = d3.select(".ptm-tooltip");
-const heatmapTooltip = d3.select(".heatmap-tooltip");
-
-const ptmColors = {
-    "phospho": "blue",
-    "n-acetyl": "green",
-    "sulfo": "red",
-    "n6-acetyl": "purple",
-    "diiodo": "orange",
-    "omega-n-methyl": "brown",
-    "n5-methyl": "pink",
-    "Other": "black"
-};
-
+// Y-scale for protein alignment rows
 const yScale = d3.scaleBand()
     .domain(Object.keys(sequences))
     .range([margin.top, height])
     .padding(0.5);
 
-svg.selectAll(".protein")
-    .data(Object.keys(sequences))
-    .enter().append("line")
-    .attr("class", "protein")
-    .attr("x1", margin.left)
-    .attr("x2", margin.left + width)  // Extend lines fully
-    .attr("y1", d => yScale(d))
-    .attr("y2", d => yScale(d))
-    .attr("stroke", "black");
-
+// Add protein labels on the left
 svg.selectAll(".protein-label")
     .data(Object.keys(sequences))
     .enter().append("text")
     .attr("class", "protein-label")
     .attr("x", margin.left - 10)
-    .attr("y", d => yScale(d) + 5)
+    .attr("y", d => yScale(d))
     .attr("text-anchor", "end")
     .text(d => d);
 
+// Define color scheme for amino acids (AA)
+const aminoAcidColors = {
+    "A": "green",  "V": "green",  "L": "green",  "I": "green",  "M": "green",  // Hydrophobic (Aliphatic)
+    "F": "blue",  "Y": "blue",  "W": "blue",                                  // Aromatic
+    "K": "red",  "R": "red",  "H": "red",                                     // Positively charged
+    "D": "purple",  "E": "purple",                                            // Negatively charged
+    "S": "orange",  "T": "orange",  "N": "orange",  "Q": "orange",            // Polar uncharged
+    "C": "gold",  "G": "gray",  "P": "brown",                                 // Special cases
+    "-": "lightgray"                                                          // Alignment gap
+};
+
+// Display aligned sequences as text
+Object.entries(sequences).forEach(([proteinId, sequence]) => {
+    svg.selectAll(`.seq-${proteinId}`)
+        .data(sequence.split(""))
+        .enter().append("text")
+        .attr("class", "sequence")
+        .attr("x", (d, i) => margin.left + i * 12)  
+        .attr("y", yScale(proteinId) )
+        .attr("text-anchor", "middle")
+        .text(d => d)
+        .attr("font-family", "monospace")
+        .attr("font-weight", "bold") 
+        .attr("fill", d => aminoAcidColors[d] || "black"); // Gaps in gray
+});
+
+// PTM color coding
+
+const ptmColors = {
+    "phospho": "#A9DEF9",
+    "n-acetyl": "#F5DD90",
+    "sulfo": "#F76C5E",
+    "n6-acetyl": "#E4C1F9",
+    "diiodo": "#F68E5F",
+    "omega-n-methyl": "#D3F8E2",
+    "n5-methyl": "#F694C1",
+    "Other": "black"
+};
+
+// Define different shapes for PTMs
+const ptmShapes = {
+    "phospho": d3.symbolCircle,  
+    "n-acetyl": d3.symbolCross,   
+    "sulfo": d3.symbolTriangle,  
+    "diiodo": d3.symbolDiamond,       
+    "omega-n-methyl": d3.symbolWye,   
+    "n5-methyl": d3.symbolX,     
+    "n6-acetyl": d3.symbolStar, 
+    "default": d3.symbolSquare   
+};
+
+// Define symbol generator
+const symbolGenerator = d3.symbol()
+    .size(200); // Adjust symbol size if necessary
+
+const ptmTooltip = d3.select(".ptm-tooltip");
+// Adjust PTM positions based on alignment gaps
 Object.entries(ptmData).forEach(([proteinId, ptms]) => {
     if (!ptms || Object.keys(ptms).length === 0) return;
 
+    let alignedSequence = sequences[proteinId].split("");
+    let ungappedPosition = 0;
+    let ptmPositions = {};
+
+    // Map original PTM positions to new aligned positions
+    alignedSequence.forEach((char, alignedIndex) => {
+        if (char !== "-") {
+            ungappedPosition++;
+        }
+        ptmPositions[ungappedPosition] = alignedIndex;  // Store new mapped position
+    });
+
+    // Draw PTM markers at the correct positions (above the sequence)
     svg.selectAll(`.ptm-${proteinId}`)
-        .data(Object.entries(ptms))
-        .enter().append("circle")
-        .attr("class", "ptm")
-        .attr("cx", d => margin.left + (d[1].new_position / maxSeqLength) * width)  // Normalize positions
-        .attr("cy", yScale(proteinId))
-        .attr("r", 7)
-        .attr("fill", d => ptmColors[d[1].type] || "black")
-        .on("mouseover", function(event, d) {
-            ptmTooltip.style("display", "block")
-                   .style("left", (event.pageX + 10) + "px")
-                   .style("top", (event.pageY - 10) + "px")
-                   .html(`
-                     <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
-                     <div class="ptm-tooltip-content">
-                       <strong>Type:</strong> ${d[1].type}<br>
-                       <strong>Original Position:</strong> ${d[1].original_position}<br>
-                       <strong>New Position:</strong> ${d[1].new_position}
-                     </div>
-                   `);
-        })
-        .on("mouseout", function() {
-            ptmTooltip.style("display", "none");
-        });
+    .data(Object.entries(ptms))
+    .enter().append("path") // Instead of circle, use path for different shapes
+    .attr("class", "ptm")
+    .attr("d", d => symbolGenerator.type(ptmShapes[d[1].type] || ptmShapes["default"])()) // Choose shape
+    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 25})`) // Adjust position
+    .attr("fill", d => ptmColors[d[1].type] || "black")
+    .on("mouseover", function(event, d) {
+        ptmTooltip.style("display", "block")
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 10) + "px")
+            .html(`
+                <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
+                <div class="ptm-tooltip-content">
+                    <strong>Type:</strong> ${d[1].type}<br>
+                    <strong>Original Position:</strong> ${d[1].original_position}<br>
+                    <strong>New Position:</strong> ${d[1].new_position}
+                </div>
+            `);
+    })
+    .on("mouseout", function() {
+        ptmTooltip.style("display", "none");
+    });
+
 });
+
+</script>
+
+
+
+<script>
+
+const heatmapTooltip = d3.select(".heatmap-tooltip");
 
 // Add Jaccard Heatmap
 const heatmapSvg = d3.select("#heatmap");

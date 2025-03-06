@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block content %}
+<body>
+    <h1 style="margin-top: 100px;">History of {{ username }}</h1>
+    
+    <div id="search-history">
+        <h4>Last 10 Searches:</h4>
+        <div class="scroll-container">
+            <ol id="history-list"></ol>
+        </div>
+    </div>
+    <button onclick="showFullHistory()">Show Full History</button>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let username = "{{ username }}";  
+            document.getElementById("history-title").innerText = "History of " + username;
+        });
+
+
+        function generateMockHistory() {
+            const mockHistory = [
+                { query: "P12345, P67890", alignment: "alignment1.clustal", heatmap: "heatmap1.png", tree: "tree1.png" },
+                { query: "Q11111, Q22222", alignment: "alignment2.clustal", heatmap: "heatmap2.png", tree: "tree2.png" },
+                { query: "R33333, R44444", alignment: "alignment3.clustal", heatmap: "heatmap3.png", tree: "tree3.png" },
+                { query: "S55555, S66666", alignment: "alignment4.clustal", heatmap: "heatmap4.png", tree: "tree4.png" },
+                { query: "T77777, T88888", alignment: "alignment5.clustal", heatmap: "heatmap5.png", tree: "tree5.png" },
+                { query: "U99999, U00000", alignment: "alignment6.clustal", heatmap: "heatmap6.png", tree: "tree6.png" },
+                { query: "V12321, V32123", alignment: "alignment7.clustal", heatmap: "heatmap7.png", tree: "tree7.png" },
+                { query: "W45654, W65456", alignment: "alignment8.clustal", heatmap: "heatmap8.png", tree: "tree8.png" },
+                { query: "X78987, X98789", alignment: "alignment9.clustal", heatmap: "heatmap9.png", tree: "tree9.png" },
+                { query: "Y10101, Y20202", alignment: "alignment10.clustal", heatmap: "heatmap10.png", tree: "tree10.png" }
+            ];
+            localStorage.setItem("searchHistory", JSON.stringify(mockHistory));
+            displayHistory();
+        }
+      
+        function displayHistory() {
+            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+            let historyList = document.getElementById("history-list");
+            historyList.innerHTML = history.slice(0, 10).map(item => `
+            <li>
+                <strong>Query:</strong> ${item.query} #Nombre de la proteina buscada
+                <strong>Alignment:</strong> ${item.alignment} #Clustal alignment con los PTM en formato????
+                <strong>Heatmap:</strong> <img src="${item.heatmap}" width="50"> #Imagen del heatmap
+                <strong>Tree:</strong> <img src="${item.tree}" width="50"> #Imagen del phylogenetic tree
+            </li>`
+            ).join('');
+        }
+        
+        window.onload = displayHistory;
+
+        function showFullHistory() {
+            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+            let historyList = document.getElementById("history-list");
+            historyList.innerHTML = history.map(item => `
+            <li>
+                <strong>Query:</strong> ${item.query} #Nombre de la proteina buscada
+                <strong>Alignment:</strong> ${item.alignment} #Clustal alignment con los PTM en formato????
+                <strong>Heatmap:</strong> <img src="${item.heatmap}" width="50"> #Imagen del heatmap
+                <strong>Tree:</strong> <img src="${item.tree}" width="50"> #Imagen del phylogenetic tree
+            </li>`
+            ).join('');
+        }
+
+    </script>
+
+
+{% endblock %}

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template
-from flask_login import login_required
+from flask_login import login_required, current_user
 from forms.login_form import LoginForm
 from forms.registration_form import RegistrationForm
 
@@ -14,4 +14,8 @@ def home():
 @main.route('/browser')
 def browser():
     return render_template('compare.html', title="Browser")
+
+@main.route('/history')
+def history():
+    return render_template('history.html', title="History", username=current_user.username)
 

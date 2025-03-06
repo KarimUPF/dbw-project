@@ -17,16 +17,18 @@ def signup():
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))  # Already logged in
     
-    signup_form = RegistrationForm()
+    login_form = LoginForm()
+    signup_form = RegistrationForm() 
     if signup_form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(signup_form.password.data).decode('utf-8')
         user = User(username=signup_form.username.data, email=signup_form.email.data, password=hashed_password, last_login=datetime.now(), role_id=2)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You can now log in.', 'success')
-        return redirect(url_for('auth.login'))
-    
-    return render_template('signup.html', title='Sign Up', signup_form=signup_form)
+        return redirect(url_for('main.home', _anchor='login'))
+    else:
+        flash('There were errors in your form. Please check and try again.', 'danger')
+        return redirect(url_for('main.home', _anchor='signup'))
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -34,6 +36,7 @@ def login():
         return redirect(url_for('main.home'))  # Already logged in
 
     login_form = LoginForm()
+    signup_form = RegistrationForm() 
     if login_form.validate_on_submit():
         user = User.query.filter_by(username=login_form.username.data).first()
         if user and bcrypt.check_password_hash(user.password, login_form.password.data):
@@ -41,12 +44,10 @@ def login():
             flash('Login successful!', 'success')
             
             # Redirect to the next page if specified, otherwise home
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('main.home'))
+            return redirect(url_for('main.home'))
         else:
             flash('Login failed. Check username and password.', 'danger')
-
-    return render_template('login.html', title='Login', login_form=login_form)
+            return redirect(url_for('main.home', _anchor='login'))
 
 @auth.route('/logout')
 @login_required  # Protect logout

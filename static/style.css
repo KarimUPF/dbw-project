@@ -10,6 +10,31 @@ footer{
     background-color: var(--blanco);
 }
 
+/*Flash warnings*/
+#flash-messages {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    text-align: center;
+    z-index: 1000;
+}
+.alert {
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    color: var(--blanco);
+    background-color: rgba(34, 145, 242, 0.8); /* Slightly transparent background */
+    display: inline-block;
+    margin-bottom: 10px;
+    width: auto; /* Adjust width to fit the content */
+    max-width: 100%; /* Ensure it doesn't overflow the container */
+    word-wrap: break-word; /* Break long words to fit within the box */
+}
+
+
+
 /*History*/
 #history-list li:nth-child(odd) {
     background-color: #f9f9f9; /* Light gray */

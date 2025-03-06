@@ -4,6 +4,15 @@
 
 {% block content %}
 <section class="title-section">
+    <div id="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="margin-top: 70px;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
     <div class="container d-flex flex-column justify-content-center align-items-center vh-100 text-center">
         <h1 class="display-4 text-white">Welcome to PTM Nexus!</h1>
         <p class="lead text-white">This is a basic Flask template project.</p>

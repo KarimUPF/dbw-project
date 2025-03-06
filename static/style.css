@@ -6,6 +6,10 @@
     --rosa : #D98BCC;
 }
 
+footer{
+    background-color: var(--blanco);
+}
+
 /*History*/
 #history-list li:nth-child(odd) {
     background-color: #f9f9f9; /* Light gray */

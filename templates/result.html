@@ -44,6 +44,7 @@
 
             // Render graph with selected proteins (use ptm data from Flask backend)
             const ptmData = {{ proteins | tojson }};  // Passing protein data to JS
+            print(ptmData)
 
             // Filter the selected protein data
             const selectedData = ptmData.filter(p => selectedProteins.includes(p.protein_id));

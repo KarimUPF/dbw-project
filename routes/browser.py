@@ -14,24 +14,46 @@ from routes.jaccarddef import calculate_ptm_jaccard_with_window
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
-def run_blast(protein_id, session):#
-    """Run BLASTP to find the 10 most similar proteins from MySQL."""
+def run_blast(protein_id, session, selected_organisms=None):
+    """
+    Run BLASTP to find the most similar proteins from MySQL.
+    Filters results by organism if specified.
+    """
+    # Get the query protein
     protein = session.query(Protein).filter_by(accession_id=protein_id).first()
     if not protein:
         return []
 
+    # Save query sequence to a file
     query_file = "query.fasta"
     with open(query_file, "w") as f:
         f.write(f">{protein.accession_id}\n{protein.sequence}\n")
 
+    # Get all target proteins, filtered by organism if specified
+    target_query = session.query(Protein)
+    if selected_organisms:
+        target_query = target_query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
+    
+    # Create a temporary FASTA database with only proteins from selected organisms
+    blast_db_file = "temp_blast_db.fasta"
+    with open(blast_db_file, "w") as f:
+        for target_protein in target_query.all():
+            if target_protein.sequence:  # Ensure sequence exists
+                f.write(f">{target_protein.accession_id}\n{target_protein.sequence}\n")
+    
+    # Create a temporary BLAST database
+    subprocess.run(["makeblastdb", "-in", blast_db_file, "-dbtype", "prot"], check=True)
+    
+    # Run BLAST against the temporary database
     blast_output = "blast_results.txt"
     subprocess.run([
-        "blastp", "-query", query_file, "-db", "my_protein_db",
+        "blastp", "-query", query_file, "-db", blast_db_file,
         "-outfmt", "6 sseqid pident length evalue",
         "-max_target_seqs", "10",
         "-out", blast_output
     ], check=True)
 
+    # Parse BLAST results
     hits = []
     with open(blast_output, "r") as f:
         for line in f:
@@ -45,20 +67,44 @@ def run_blast(protein_id, session):#
                 "evalue": float(parts[3])
             })
 
+    # Sort by identity (descending) and then by e-value (ascending)
     hits.sort(key=lambda x: (-x["identity"], x["evalue"]))
+    
+    # Return the top 10 hits
     return [hit["id"] for hit in hits[:10]]
 
 def align_sequences(proteins):
     """Perform multiple sequence alignment with Clustal Omega."""
     fasta_file = "sequences.fasta"
     
+    # Make sure we're writing valid sequences to the file
     with open(fasta_file, "w") as f:
         for protein in proteins:
-            f.write(f">{protein.accession_id}\n{protein.sequence}\n")
-
+            if protein.sequence and protein.accession_id:
+                f.write(f">{protein.accession_id}\n{protein.sequence}\n")
+    
+    # Check if the file has content
+    import os
+    if os.path.getsize(fasta_file) == 0:
+        raise ValueError("No valid sequences were found in the proteins list")
+    
     aligned_file = "aligned.fasta"
-    subprocess.run(["clustalo", "-i", fasta_file, "-o", aligned_file, "--force", "--verbose", "--auto"], shell=True)
-
+    
+    # Use subprocess.run with a list of arguments (no shell=True)
+    # This is safer and more reliable across platforms
+    import subprocess
+    result = subprocess.run(
+        ["clustalo", "-i", fasta_file, "-o", aligned_file, "--force"], 
+        capture_output=True,
+        text=True,
+        shell=False  # Don't use shell=True
+    )
+    
+    # Check for errors
+    if result.returncode != 0:
+        print(f"Clustal Omega error: {result.stderr}")
+        raise RuntimeError(f"Clustal Omega failed: {result.stderr}")
+    
     return aligned_file
 
 def adjust_ptm_positions(sequences, ptm_dict):
@@ -123,29 +169,31 @@ def align_and_update_ptms():
     
     # Unified handling for single or multiple proteins
     if len(protein_ids) == 1:
-        # Single protein case - do BLAST
+        # Single protein case - do BLAST with organism filtering
         protein_id = protein_ids[0]
-        similar_proteins_ids = run_blast(protein_id, session_db)
-        proteins_to_align = []
         
-        # Get proteins from BLAST results, filtering by organism if specified
-        protein_query = session_db.query(Protein).filter(Protein.accession_id.in_(similar_proteins_ids))
-        if selected_organisms:
-            protein_query = protein_query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
-        proteins_to_align = protein_query.all()
+        # Use the updated BLAST function with organism filtering
+        similar_proteins_ids = run_blast(protein_id, session_db, selected_organisms)
+        
+        # Get the proteins from BLAST results
+        proteins_to_align = session_db.query(Protein).filter(
+            Protein.accession_id.in_(similar_proteins_ids)
+        ).all()
         
         # Always include the query protein
         query_protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
         if query_protein and query_protein not in proteins_to_align:
             proteins_to_align.append(query_protein)
     else:
-        # Multiple proteins case - just use the provided proteins
-        proteins_to_align = session_db.query(Protein).filter(
-            Protein.accession_id.in_(list(protein_ids))
-        ).all()
+        # Multiple proteins case - use the provided proteins
+        # Apply organism filter if specified
+        query = session_db.query(Protein).filter(Protein.accession_id.in_(protein_ids))
+        if selected_organisms:
+            query = query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
+        proteins_to_align = query.all()
     
     if not proteins_to_align:
-        return jsonify({"error": "No proteins found"}), 400
+        return jsonify({"error": "No proteins found matching the criteria"}), 400
         
     # Common code for both cases
     aligned_file = align_sequences(proteins_to_align)
@@ -176,15 +224,11 @@ def align_and_update_ptms():
     parameters = {
         "protein_ids": protein_ids,
         "ptm_types": selected_ptms,
+        "organism_filter": selected_organisms,
         "window_size": window_size,
     }
 
-    # "jaccard_indices": formatted_jaccard_indices,
-    # "ptm_data": ptm_data,
-    # "sequences": sequences
-
     print(parameters)
-
 
     query = Query(parameters=parameters, summary_table=None, graph=None)
 
@@ -212,4 +256,3 @@ def align_and_update_ptms():
 def download_fasta():
     fasta_file_path = "aligned.fasta"  
     return send_file(fasta_file_path, as_attachment=True, download_name="aligned.fasta")
-

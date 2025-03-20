@@ -2,6 +2,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from forms.login_form import LoginForm
 from forms.registration_form import RegistrationForm
+from models.all_models import History
 
 main = Blueprint('main', __name__)
 
@@ -17,5 +18,8 @@ def browser():
 
 @main.route('/history')
 def history():
-    return render_template('history.html', title="History", username=current_user.username)
+    return render_template('history.html', 
+                           title="History", 
+                           username=current_user.username, 
+                           history=History.query.filter_by(user_id=current_user.id).first())
 

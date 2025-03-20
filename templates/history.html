@@ -10,6 +10,11 @@
         <h4>Last 10 Searches:</h4>
         <div class="scroll-container">
             <ol id="history-list"></ol>
+            {% for query in history.queries %}
+                <li>
+                    <strong>Query:</strong> {{ query.parameters }}
+                </li>
+            {% endfor %}
         </div>
     </div>
     <button onclick="showFullHistory()">Show Full History</button>

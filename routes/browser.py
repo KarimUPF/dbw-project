@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, render_template, send_file, session
+from flask_login import current_user
 import subprocess
 import csv
 import io
@@ -7,14 +8,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from Bio import SeqIO
-from Bio.Align.Applications import ClustalOmegaCommandline
-from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism
+from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism, Query, History
 from routes.jaccarddef import calculate_ptm_jaccard_with_window
 
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
-def run_blast(protein_id, session):
+def run_blast(protein_id, session):#
     """Run BLASTP to find the 10 most similar proteins from MySQL."""
     protein = session.query(Protein).filter_by(accession_id=protein_id).first()
     if not protein:
@@ -57,8 +57,7 @@ def align_sequences(proteins):
             f.write(f">{protein.accession_id}\n{protein.sequence}\n")
 
     aligned_file = "aligned.fasta"
-    clustal_cline = ClustalOmegaCommandline(infile=fasta_file, outfile=aligned_file, force=True, verbose=True, auto=True)
-    subprocess.run(str(clustal_cline), shell=True)
+    subprocess.run(["clustalo", "-i", fasta_file, "-o", aligned_file, "--force", "--verbose", "--auto"], shell=True)
 
     return aligned_file
 
@@ -107,15 +106,8 @@ def get_organisms():
     session_db.close()
     return jsonify([org[0] for org in organisms])  # Convert to list
 
-
-
 @ptm_comparator.route('/compare_ptms', methods=['POST'])
 def align_and_update_ptms():
-    # Clear old session data
-    session.pop('jaccard_indices', None)
-    session.pop('ptm_data', None)
-    session.pop('sequences', None)
-    
     # Get user inputs
     protein_ids = request.form.get('protein_id', '').split(',')
     protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
@@ -178,15 +170,33 @@ def align_and_update_ptms():
     ptm_data = adjust_ptm_positions(sequences, ptm_dict)
     jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
     
-    # Store data in session consistently
-    session['jaccard_indices'] = json.dumps({f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()})
-    session['ptm_data'] = json.dumps(ptm_data)
-    session['sequences'] = json.dumps(sequences)
-        
-    session_db.close()
-    
     # Convert tuple keys to strings for JSON serialization
     formatted_jaccard_indices = {f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()}
+
+    parameters = {
+        "protein_ids": protein_ids,
+        "ptm_types": selected_ptms,
+        "window_size": window_size,
+    }
+
+    # "jaccard_indices": formatted_jaccard_indices,
+    # "ptm_data": ptm_data,
+    # "sequences": sequences
+
+    print(parameters)
+
+
+    query = Query(parameters=parameters, summary_table=None, graph=None)
+
+    history = session_db.query(History).filter_by(user_id=current_user.id).first()
+    if not history:
+        history = History(user_id=current_user.id)
+        session_db.add(history)
+        session_db.commit()
+    
+    session_db.add(query)
+    history.queries.append(query)
+    session_db.commit()    
 
     return render_template(
         "ptm_interactive.html", 

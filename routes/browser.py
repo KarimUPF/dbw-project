@@ -10,12 +10,15 @@ import numpy as np
 from Bio import SeqIO
 from models.all_models import db, Protein, PTM, ProteinHasPTM, Organism, Query, History
 from routes.jaccarddef import calculate_ptm_jaccard_with_window
-
+import os
+from flask import send_file
+from Bio import AlignIO
+from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
+from Bio import Phylo
+from flask import jsonify
+import json
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
-
-import os
-import subprocess
 
 def run_blast(protein_id, session, selected_organisms=None):
     """
@@ -103,12 +106,6 @@ def run_blast(protein_id, session, selected_organisms=None):
     return [hit["id"] for hit in hits[:10]]
 
 
-
-from Bio import AlignIO
-from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
-from Bio import Phylo
-import os
-
 def align_sequences(proteins):
     """Align proteins with Clustal Omega and generate distance-based tree."""
     fasta_file = "sequences.fasta"
@@ -172,8 +169,6 @@ def align_sequences(proteins):
     return aligned_file, tree_file
 
 
-from ete3 import Tree, TreeStyle
-
 def convert_newick_to_json(nwk_path):
     """Convierte un árbol en formato Newick a JSON para D3.js, eliminando nodos internos sin nombre."""
     if not os.path.exists(nwk_path):
@@ -193,13 +188,6 @@ def convert_newick_to_json(nwk_path):
     tree_json = parse_clade(tree.root)
     return json.dumps(tree_json)
 
-def generate_tree_html(tree_file, html_output):
-    from ete3 import Tree, TreeStyle, TextFace
-    t = Tree(tree_file, format=1)
-    ts = TreeStyle()
-    ts.show_leaf_name = True
-    ts.title.add_face(TextFace("Árbol filogenético basado en distancias de alineamiento", fsize=12), column=0)
-    t.render(html_output, tree_style=ts)
 
 def adjust_ptm_positions(sequences, ptm_dict):
     """Adjust PTM positions based on alignment gaps for all proteins."""
@@ -348,12 +336,6 @@ def download_fasta():
     fasta_file_path = "aligned.fasta"  
     return send_file(fasta_file_path, as_attachment=True, download_name="aligned.fasta")
 
-from flask import send_from_directory
-
-
-from ete3 import Tree, TreeStyle, TextFace
-import os
-from flask import send_file
 
 def generate_tree(nwk_path):
     """Genera un archivo .html desde un .nwk y lo guarda en `results/trees/`."""
@@ -396,13 +378,6 @@ def generate_tree_html(tree_file, html_output=None):
 
     return html_output
 
-from flask import jsonify
-from Bio import Phylo
-import json
-
-from flask import jsonify
-from Bio import Phylo
-import json
 
 @ptm_comparator.route('/get_tree_json/<query_id>')
 def get_tree_json(query_id):

@@ -44,11 +44,18 @@
 </head>
 
 <body>
-    <h1 style="margin-top: 100px; margin-bottom: 30px;">Interactive Post-Translational Modifications Viewer</h1>
+    <h1 style="margin-top: 100px; margin-bottom: 30px;">Post-Translational Modifications Viewer</h1>
     <div class="scroll-container">
         <svg width="100%" height="500"></svg>
     </div>
     <div class="ptm-tooltip"></div>
+
+    <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+        background:white; border:1px solid #ccc; padding:20px; z-index:2000; border-radius:10px; max-width:500px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <span id="close-ptm-modal" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
+        <div id="ptm-modal-content"></div>
+    </div>
+
 
     <div style="margin: 40px auto; text-align: center;">
         <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
@@ -93,13 +100,13 @@ svg.selectAll(".protein-label")
 
 // Define color scheme for amino acids (AA)
 const aminoAcidColors = {
-    "A": "green",  "V": "green",  "L": "green",  "I": "green",  "M": "green",  // Hydrophobic (Aliphatic)
-    "F": "blue",  "Y": "blue",  "W": "blue",                                  // Aromatic
-    "K": "red",  "R": "red",  "H": "red",                                     // Positively charged
-    "D": "purple",  "E": "purple",                                            // Negatively charged
-    "S": "orange",  "T": "orange",  "N": "orange",  "Q": "orange",            // Polar uncharged
-    "C": "gold",  "G": "gray",  "P": "brown",                                 // Special cases
-    "-": "lightgray"                                                          // Alignment gap
+    "A": "#a8d5a2",  "V": "#a8d5a2",  "L": "#a8d5a2",  "I": "#a8d5a2",  "M": "#a8d5a2",  
+    "F": "#b0c4de",  "Y": "#b0c4de",  "W": "#b0c4de",                                  
+    "K": "#f4a3a3",  "R": "#f4a3a3",  "H": "#f4a3a3",                                  
+    "D": "#dab6fc",  "E": "#dab6fc",                                                  
+    "S": "#ffddaa",  "T": "#ffddaa",  "N": "#ffddaa",  "Q": "#ffddaa",               
+    "C": "#f2e09f",  "G": "#d3d3d3",  "P": "#deb887",                                 
+    "-": "#eaeaea"                                                                  
 };
 
 // Display aligned sequences as text
@@ -119,16 +126,34 @@ Object.entries(sequences).forEach(([proteinId, sequence]) => {
 
 // PTM color coding
 
-const ptmColors = {
-    "phospho": "#A9DEF9",
-    "n-acetyl": "#F5DD90",
-    "sulfo": "#F76C5E",
-    "n6-acetyl": "#E4C1F9",
-    "diiodo": "#F68E5F",
-    "omega-n-methyl": "#D3F8E2",
-    "n5-methyl": "#F694C1",
-    "Other": "black"
-};
+// Convert PTM name to a consistent HSL color using hash
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 100%, 50%)`;  // vibrant consistent color
+}
+
+// Build list of unique PTM types from your data
+const ptmTypes = new Set();
+Object.values(ptmData).forEach(ptms => {
+    Object.values(ptms).forEach(ptm => {
+        if (ptm.type) {
+            ptmTypes.add(ptm.type);
+        }
+    });
+});
+
+// Assign each PTM type a consistent color
+const ptmColors = {};
+ptmTypes.forEach(type => {
+    ptmColors[type] = stringToColor(type);
+});
+
+// Fallback color
+ptmColors["Other"] = "#444";
 
 // Define different shapes for PTMs
 const ptmShapes = {
@@ -163,8 +188,8 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
         ptmPositions[ungappedPosition] = alignedIndex;  // Store new mapped position
     });
 
-    // Draw PTM markers at the correct positions (above the sequence)
-    svg.selectAll(`.ptm-${proteinId}`)
+ // Draw PTM markers at the correct positions (above the sequence)
+ svg.selectAll(`.ptm-${proteinId}`)
     .data(Object.entries(ptms))
     .enter().append("path") // Instead of circle, use path for different shapes
     .attr("class", "ptm")
@@ -172,21 +197,178 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
     .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 25})`) // Adjust position
     .attr("fill", d => ptmColors[d[1].type] || "black")
     .on("mouseover", function(event, d) {
-        ptmTooltip.style("display", "block")
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 10) + "px")
-            .html(`
-                <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
-                <div class="ptm-tooltip-content">
-                    <strong>Type:</strong> ${d[1].type}<br>
-                    <strong>Original Position:</strong> ${d[1].original_position}<br>
-                    <strong>New Position:</strong> ${d[1].new_position}
-                </div>
-            `);
-    })
-    .on("mouseout", function() {
-        ptmTooltip.style("display", "none");
-    });
+    const ptmType = d[1].type;
+
+    ptmTooltip.style("display", "block")
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .html(`
+            <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
+            <div class="ptm-tooltip-content">
+                <strong>Type:</strong> <span class="ptm-info-link" style="color:blue; text-decoration:underline; cursor:pointer;" data-ptm="${ptmType}">${ptmType}</span><br>                <strong>Original Position:</strong> ${d[1].original_position}<br>
+                <strong>New Position:</strong> ${d[1].new_position}
+            </div>
+        `);
+})
+.on("mouseout", function() {
+    // Retrasar la ocultación para permitir que el usuario mueva el cursor al tooltip
+    setTimeout(() => {
+        if (!ptmTooltip.node().matches(':hover')) {
+            ptmTooltip.style("display", "none");
+        }
+    }, 200);
+});
+
+
+// Evitar que el tooltip desaparezca si el cursor está sobre él
+ptmTooltip.on("mouseover", function() {
+    ptmTooltip.style("display", "block");
+}).on("mouseout", function() {
+    ptmTooltip.style("display", "none");
+});
+
+// Dictionary with textual information about each PTM
+const ptmDescriptions = {
+    "phospho": "Phosphorylation involves the addition of a phosphate group, typically to serine, threonine, or tyrosine residues. It is a key regulatory mechanism in signaling pathways, enzyme activity, and protein interactions.",
+    "n6-acetyl": "N6-acetylation modifies the ε-amino group of lysine residues by adding an acetyl group. It is crucial in chromatin remodeling, transcriptional regulation, and protein stability.",
+    "omega-n-methyl": "Omega-N-methylation refers to the methylation of terminal nitrogen atoms on lysine or arginine side chains. It modulates protein-protein interactions and affects chromatin structure and signaling.",
+    "asymmetric dimethyl": "Asymmetric dimethylation involves adding two methyl groups to the same terminal nitrogen of an arginine residue. It affects RNA processing and transcriptional regulation.",
+    "n-acetyl": "N-acetylation is the covalent attachment of an acetyl group to the N-terminal residue of a protein. It influences protein lifespan, folding, localization, and interaction networks.",
+    "n5-methyl": "N5-methylation involves methylation of nitrogen at position 5 of glutamine or arginine. It's associated with enzyme regulation and gene expression.",
+    "5-glutamyl polyglutamate": "Polyglutamylation consists of attaching several glutamate residues to the γ-carboxyl group of glutamate side chains, notably in tubulin, affecting stability and interactions.",
+    "n6-succinyl": "N6-succinylation adds a succinyl group to lysine residues, introducing a negative charge. It influences metabolism, chromatin structure, and mitochondrial protein regulation.",
+    "persulfide": "Persulfidation forms a persulfide (-SSH) group on cysteine residues. It is involved in antioxidant defense and redox-based signal transduction.",
+    "methyl ester": "Methyl esterification adds a methyl group to carboxylic acid side chains like glutamate or aspartate. It can affect electrostatics and reactivity.",
+    "(3r)-3-hydroxy": "3R-3-hydroxylation introduces a hydroxyl group in the R-configuration on side chains, impacting local folding and hydrogen bonding.",
+    "n6-methyl": "N6-methylation involves methylating the ε-amino group of lysine, frequently in histones, and plays a role in epigenetic regulation.",
+    "n6-carboxy": "N6-carboxylation introduces a carboxylic acid group to lysine residues, potentially altering protein charge and binding capacity.",
+    "citrulline": "Citrullination converts arginine into citrulline through deimination. It modulates immune response and is involved in autoimmune diseases.",
+    "symmetric dimethyl": "Symmetric dimethylation adds one methyl group to each nitrogen of the guanidino group of arginine. It impacts RNA binding and gene expression.",
+    "n6-(2-hydroxyisobutyryl)": "This modification adds a hydroxyisobutyryl group to lysine and is associated with metabolic state-dependent transcriptional regulation.",
+    "n6-(beta-hydroxybutyryl)": "N6-β-hydroxybutyrylation links lysine residues to ketone metabolism and is induced during fasting or ketogenic conditions.",
+    "n6-lactoyl": "N6-lactoylation links lactate-derived moieties to lysine residues and has been connected to metabolic regulation of gene expression.",
+    "n6-crotonyl": "Crotonylation is the addition of a crotonyl group to lysine, marking active gene transcription in chromatin.",
+    "n6-glutaryl": "Glutarylation is a negatively charged acylation on lysine linked to mitochondrial and metabolic regulation.",
+    "4-hydroxy": "4-Hydroxylation modifies proline and lysine residues, especially in collagen, and contributes to structural protein stability.",
+    "(3s)-3-hydroxy": "3S-3-hydroxylation introduces a hydroxyl group in the S-configuration on certain amino acid residues, influencing polarity and reactivity.",
+    "amide": "Amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-nitroso": "S-nitroso is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-biotinyl": "N6-biotinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "diphospho": "Diphosphorylation adds two phosphate groups to residues like serine, threonine, or tyrosine, often as part of kinase cascades or protein activation.",
+    "n6-methylated": "N6-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "pros-methyl": "Pros-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-glutathionyl": "S-glutathionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6,n6-dimethyl": "N6,n6-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-lipoyl": "N6-lipoyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "pyrrolidone carboxylic acid": "Pyrrolidone carboxylic acid is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "dimethylated": "Dimethylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6,n6,n6-trimethyl": "N6,n6,n6-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "iodo": "Iodo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "sulfo": "Sulfation is the addition of a sulfate group to tyrosine or carbohydrate moieties, often modulating receptor-ligand binding or extracellular signaling.",
+    "thyroxine": "Thyroxine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "triiodothyronine": "Triiodothyronine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "diiodo": "Diiodination involves adding two iodine atoms to tyrosine residues. It is a precursor to thyroid hormones like T3 and T4.",
+    "deamidated": "Deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "o-(pantetheine 4'-phosphoryl)": "O-(pantetheine 4'-phosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "4-carboxyglutamate": "4-carboxyglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) o-acetyl": "(microbial infection) o-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "hydroxy": "Hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "phenyl amide": "Phenyl amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-(pyridoxal phosphate)": "N6-(pyridoxal phosphate) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "sulfonic acid (-so3h)": "Sulfonic acid (-so3h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "sulfenic acid (-soh)": "Sulfenic acid (-soh) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(3r)-3-hydroxyaspartate": "(3r)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n,n,n-trimethyl": "N,n,n-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-(retinylidene)": "N6-(retinylidene) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "3'-nitro": "3'-nitro is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "adp-ribosyl": "Adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-(2-succinyl)": "S-(2-succinyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-(adp-ribosyl)": "N6-(adp-ribosyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-butyryl": "N6-butyryl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "polyadp-ribosyl": "Polyadp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-malonyl": "N6-malonyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "2',4',5'-topaquinone": "2',4',5'-topaquinone is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) phospho": "(microbial infection) phospho is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-hydroxy": "5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "3-hydroxy": "3-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-methyl": "S-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "tele-methyl": "Tele-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) deamidated": "(microbial infection) deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "1-thio": "1-thio is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "glycyl adenylate": "Glycyl adenylate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "blocked amino end (ser)": "Blocked amino end (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-cysteinyl": "S-cysteinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "beta-decarboxylated aspartate": "Beta-decarboxylated aspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "1-amide": "1-amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "al": "Al is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl dopamine": "5-glutamyl dopamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl serotonin": "5-glutamyl serotonin is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "sulfoxide": "Sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n,n-dimethyl": "N,n-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "blocked amino end (thr)": "Blocked amino end (thr) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n-methyl": "N-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl": "5-glutamyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "3'-bromo": "3'-bromo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-(dipyrrolylmethanemethyl)": "S-(dipyrrolylmethanemethyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "omega-n-methylated": "Omega-n-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "3-oxo (cys)": "3-oxo (cys) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl histamine": "5-glutamyl histamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) adp-ribosyl": "(microbial infection) adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n4,n4-dimethyl": "N4,n4-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl glycerylphosphorylethanolamine": "5-glutamyl glycerylphosphorylethanolamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "o-amp-": "O-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) adp-ribosyldiphthamide": "(microbial infection) adp-ribosyldiphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "diphthamide": "Diphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-1-carboxyethyl": "N6-1-carboxyethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(3s)-3-hydroxyaspartate": "(3s)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "pyruvic acid (ser)": "Pyruvic acid (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "sulfinic acid (-so2h)": "Sulfinic acid (-so2h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-(2,3-dicarboxypropyl)": "S-(2,3-dicarboxypropyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "aspartate 1-(chondroitin 4-sulfate)-ester": "Aspartate 1-(chondroitin 4-sulfate)-ester is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-8alpha-fad": "S-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "blocked amino end (gln)": "Blocked amino end (gln) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl poly": "5-glutamyl poly is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "tele-8alpha-fad": "Tele-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "o-acetyl": "O-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) adp-riboxanated": "(microbial infection) adp-riboxanated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n-acetylaspartate": "N-acetylaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(r)-sulfoxide": "(r)-sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) o-amp-": "(microbial infection) o-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n-acetylglutamate": "N-acetylglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-acetyl-n6-methyl": "N6-acetyl-n6-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n6-propionyl": "N6-propionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) o-(2-cholinephosphoryl)": "(microbial infection) o-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "hypusine": "Hypusine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n-pyruvate 2-iminyl-": "N-pyruvate 2-iminyl- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "s-cgmp-": "S-cgmp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "o-(2-cholinephosphoryl)": "O-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) s-methyl": "(microbial infection) s-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "5-glutamyl glutamate": "5-glutamyl glutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(4r)-5-hydroxy": "(4r)-5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(4r)-5-oxo": "(4r)-5-oxo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "thiazolidine linkage to a ring-opened dna abasic site": "Thiazolidine linkage to a ring-opened dna abasic site is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "n-acetylthreonine": "N-acetylthreonine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "pyrrolidone carboxylic acid (glu)": "Pyrrolidone carboxylic acid (glu) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "(microbial infection) n6-acetyl": "(microbial infection) n6-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "4-hydroxynonenal-conjugated": "4-hydroxynonenal-conjugated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+    "Other": "Unclassified post-translational modification. Please consult specialized databases for more details."
+};
+
+// Listen for clicks on any element with the class .ptm-info-link
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("ptm-info-link")) {
+        const ptmType = e.target.getAttribute("data-ptm");
+        const description = ptmDescriptions[ptmType] || "No description available for this PTM type.";
+        document.getElementById("ptm-modal-content").innerHTML = `<h3>${ptmType}</h3><p>${description}</p>`;
+        document.getElementById("ptm-modal").style.display = "block";
+    }
+});
+
+// Close the modal when the close button is clicked
+document.getElementById("close-ptm-modal").addEventListener("click", function() {
+    document.getElementById("ptm-modal").style.display = "none";
+});
+
 
 });
 

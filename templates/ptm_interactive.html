@@ -296,7 +296,7 @@ heatmapG.selectAll(".col-label")
 
 <script>
     document.getElementById("download-csv").addEventListener("click", function() {
-        let csvContent = "Protein 1,Protein 2,Jaccard Index\n";
+        let csvContent = "Protein 1\tProtein 2\tJaccard Index\n";
         const seenPairs = new Set(); // Track pairs to avoid duplicates
     
         // Loop over protein pairs
@@ -307,7 +307,7 @@ heatmapG.selectAll(".col-label")
                     const jaccardValue = jaccardIndices[key] || 0.0; // Default to 0 if missing
     
                     if (!seenPairs.has(`${col}-${row}`)) { // Avoid reverse duplicates
-                        csvContent += `${row},${col},${jaccardValue.toFixed(3)}\n`;
+                        csvContent += `${row}\t${col}\t${jaccardValue.toFixed(3)}\n`;
                         seenPairs.add(key);
                     }
                 }

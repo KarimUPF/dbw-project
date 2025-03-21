@@ -10,10 +10,18 @@
         <h4>Last 10 Searches:</h4>
         <div class="scroll-container">
             <ol id="history-list"></ol>
-            {% for query in history.queries %}
+            {% for query in history.queries[:10] %}
                 <li>
                     <strong>Query:</strong> {{ query.parameters }}
                 </li>
+                <a href="{{ url_for('ptm_comparator.align_and_update_ptms', 
+                        protein_id=','.join(query.parameters['protein_ids']),
+                        ptm_type=','.join(query.parameters['ptm_types'] or []),
+                        organism=','.join(query.parameters['organism_filter'] or []),
+                        window=query.parameters['window_size']
+                    )}}">
+                    <button>Re-Run</button>
+                </a>
             {% endfor %}
         </div>
     </div>

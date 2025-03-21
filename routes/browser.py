@@ -183,14 +183,20 @@ def get_organisms():
     session_db.close()
     return jsonify([org[0] for org in organisms])  # Convert to list
 
-@ptm_comparator.route('/compare_ptms', methods=['POST'])
+@ptm_comparator.route('/compare_ptms', methods=['GET', 'POST'])
 def align_and_update_ptms():
-    # Get user inputs
-    protein_ids = request.form.get('protein_id', '').split(',')
-    protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
-    selected_ptms = request.form.get('ptm_type', '').split(',')
-    selected_organisms = request.form.get('organism', '').split(',')
-    window_size = float(request.form.get('window', '0.05'))  # Default to 0.05
+    if request.method == 'POST':
+        # Get user inputs
+        protein_ids = request.form.get('protein_id', '').split(',')
+        protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
+        selected_ptms = request.form.get('ptm_type', '').split(',')
+        selected_organisms = request.form.get('organism', '').split(',')
+        window_size = float(request.form.get('window', '0.05'))  # Default to 0.05
+    else:  # Handle "Re-Run" (GET request)
+        protein_ids = request.args.get('protein_id', '').split(',')
+        selected_ptms = request.args.get('ptm_type', '').split(',')
+        selected_organisms = request.args.get('organism', '').split(',')
+        window_size = float(request.args.get('window', '0.05'))
 
     # If no PTM or organism is selected, consider all of them
     selected_ptms = None if selected_ptms == [''] else selected_ptms
@@ -256,10 +262,11 @@ def align_and_update_ptms():
         "protein_ids": protein_ids,
         "ptm_types": selected_ptms,
         "organism_filter": selected_organisms,
+        "sequences": sequences,
+        "ptm_data": ptm_data,
+        "jaccard_indices": formatted_jaccard_indices,
         "window_size": window_size,
     }
-
-    print(parameters)
 
     query = Query(parameters=parameters, summary_table=None, graph=None)
 

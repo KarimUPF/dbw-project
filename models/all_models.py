@@ -1,6 +1,6 @@
 from app import db, login_manager
 from flask_login import UserMixin
-from sqlalchemy import Enum, BLOB, JSON
+from sqlalchemy import Enum, BLOB, JSON, Text
 from datetime import datetime
 from enum import Enum as PyEnum
 
@@ -100,7 +100,7 @@ class Query(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     parameters = db.Column(JSON)
     summary_table = db.Column(BLOB, nullable=True)
-    graph = db.Column(BLOB, nullable=True)
+    graph = db.Column(db.String(500), nullable=True)  # ✅ Corrige el problema
     date = db.Column(db.DateTime, default=datetime.now(), nullable=False)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id'))
 

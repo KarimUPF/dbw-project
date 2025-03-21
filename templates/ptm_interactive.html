@@ -192,8 +192,6 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
 
 </script>
 
-
-
 <script>
 
 const heatmapTooltip = d3.select(".heatmap-tooltip");
@@ -388,6 +386,84 @@ heatmapG.selectAll(".col-label")
 });
 </script>
 
+<div>
+    <h2>Comparación de PTMs</h2>
+    
+    <h3>Árbol filogenético</h3>
+    <label for="tree-style">Estilo del árbol:</label>
+    <select id="tree-style">
+        <option value="rectangular">Rectangular</option>
+        <option value="radial">Radial</option>
+        <option value="circular">Circular</option>
+    </select>
+
+    <div id="tree-container"></div>
+
+    <script>
+        var treeData = {{ tree_json | safe }};  
+
+        function drawTree(style) {
+            d3.select("#tree-container").html("");
+
+            var width = 800, height = 500;
+            var svg = d3.select("#tree-container")
+                        .append("svg")
+                        .attr("width", width)
+                        .attr("height", height)
+                        .append("g")
+                        .attr("transform", "translate(50, 50)");
+
+            var root = d3.hierarchy(treeData);
+
+            var treeLayout;
+            if (style === "radial") {
+                treeLayout = d3.tree().size([360, width / 2 - 50]);
+            } else if (style === "circular") {
+                treeLayout = d3.cluster().size([2 * Math.PI, width / 2 - 100]);
+            } else {
+                treeLayout = d3.tree().size([height, width - 200]);
+            }
+
+            treeLayout(root);
+
+            var link = svg.selectAll(".link")
+                          .data(root.links())
+                          .enter()
+                          .append("path")
+                          .attr("class", "link")
+                          .attr("fill", "none")
+                          .attr("stroke", "blue")
+                          .attr("stroke-width", 1.5)
+                          .attr("d", d3.linkHorizontal()
+                                      .x(d => d.y)
+                                      .y(d => d.x));
+
+            var node = svg.selectAll(".node")
+                          .data(root.descendants())
+                          .enter()
+                          .append("g")
+                          .attr("class", "node")
+                          .attr("transform", d => `translate(${d.y},${d.x})`);
+
+            node.append("circle")
+                .attr("r", 5)
+                .attr("fill", "black");
+
+            node.append("text")
+                .attr("dy", ".31em")
+                .attr("x", 10)
+                .style("text-anchor", "start")
+                .text(d => d.data.name.includes("Inner") ? "" : d.data.name); // ✅ Filtra "Inner"
+        }
+
+        drawTree("rectangular");
+
+        d3.select("#tree-style").on("change", function() {
+            drawTree(this.value);
+        });
+    </script>
+</div>
+
 <!-- NEW CODE: Phylogenetic Tree Section -->
 <script>
 // Create a new section for the phylogenetic tree
@@ -497,14 +573,14 @@ function upgma(distMatrix, labels) {
 }
 
 // Perform UPGMA clustering
-const treeData = upgma(distanceMatrix, proteinIds);
+const upgmaTreeData = upgma(distanceMatrix, proteinIds);
 
 // Create hierarchical layout
 const treeLayout = d3.cluster()
     .size([treeHeight, treeWidth - 200]);
 
 // Convert the UPGMA result to d3 hierarchy format
-const root = d3.hierarchy(treeData);
+const root = d3.hierarchy(upgmaTreeData);
 
 // Calculate the position of each node
 treeLayout(root);

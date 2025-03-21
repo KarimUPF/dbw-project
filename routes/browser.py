@@ -104,39 +104,102 @@ def run_blast(protein_id, session, selected_organisms=None):
 
 
 
+from Bio import AlignIO
+from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
+from Bio import Phylo
+import os
+
 def align_sequences(proteins):
-    """Perform multiple sequence alignment with Clustal Omega."""
+    """Align proteins with Clustal Omega and generate distance-based tree."""
     fasta_file = "sequences.fasta"
     
-    # Make sure we're writing valid sequences to the file
     with open(fasta_file, "w") as f:
         for protein in proteins:
             if protein.sequence and protein.accession_id:
                 f.write(f">{protein.accession_id}\n{protein.sequence}\n")
     
-    # Check if the file has content
-    import os
     if os.path.getsize(fasta_file) == 0:
         raise ValueError("No valid sequences were found in the proteins list")
     
     aligned_file = "aligned.fasta"
     
-    # Use subprocess.run with a list of arguments (no shell=True)
-    # This is safer and more reliable across platforms
-    import subprocess
     result = subprocess.run(
         ["clustalo", "-i", fasta_file, "-o", aligned_file, "--force"], 
         capture_output=True,
         text=True,
-        shell=False  # Don't use shell=True
+        shell=False
     )
     
-    # Check for errors
     if result.returncode != 0:
         print(f"Clustal Omega error: {result.stderr}")
         raise RuntimeError(f"Clustal Omega failed: {result.stderr}")
     
-    return aligned_file
+    # ✅ Generar árbol de distancias
+    alignment = AlignIO.read(aligned_file, "fasta")
+    calculator = DistanceCalculator('identity')
+    distance_matrix = calculator.get_distance(alignment)
+    # Construcción del árbol
+    constructor = DistanceTreeConstructor()
+    tree = constructor.nj(distance_matrix)
+
+    # Crear carpeta si no existe
+    os.makedirs("results/trees", exist_ok=True)
+    tree_ids = "_".join(record.id for record in alignment)
+    safe_ids = tree_ids[:50].replace(" ", "_")
+    tree_file = f"results/trees/tree_{safe_ids}.nwk"
+
+    # ✅ GUARDAR EL ÁRBOL EN FORMATO NEWICK COMPLETO Y CORRECTO
+    from io import StringIO
+    from Bio import Phylo
+
+    handle = StringIO()
+    Phylo.write(tree, handle, "newick")
+    handle.seek(0)
+    newick_str = handle.read().strip()
+
+    # Asegurar que termina en punto y coma
+    if not newick_str.endswith(";"):
+        newick_str += ";"
+
+    # Sobrescribir tree_file con el contenido correcto
+    with open(tree_file, "w") as f:
+        f.write(newick_str)
+
+    # ✅ Ahora generar el HTML
+    html_file = tree_file.replace(".nwk", ".html")
+    generate_tree_html(tree_file, html_file)
+
+    return aligned_file, tree_file
+
+
+from ete3 import Tree, TreeStyle
+
+def convert_newick_to_json(nwk_path):
+    """Convierte un árbol en formato Newick a JSON para D3.js, eliminando nodos internos sin nombre."""
+    if not os.path.exists(nwk_path):
+        print(f"⚠️ Archivo {nwk_path} no encontrado.")
+        return None
+
+    tree = Phylo.read(nwk_path, "newick")
+
+    def parse_clade(clade):
+        if not clade.name:  
+            return {"children": [parse_clade(child) for child in clade.clades] if clade.clades else []}
+        return {
+            "name": clade.name,
+            "children": [parse_clade(child) for child in clade.clades] if clade.clades else []
+        }
+
+    tree_json = parse_clade(tree.root)
+    return json.dumps(tree_json)
+
+def generate_tree_html(tree_file, html_output):
+    from ete3 import Tree, TreeStyle, TextFace
+    t = Tree(tree_file, format=1)
+    ts = TreeStyle()
+    ts.show_leaf_name = True
+    ts.title.add_face(TextFace("Árbol filogenético basado en distancias de alineamiento", fsize=12), column=0)
+    t.render(html_output, tree_style=ts)
 
 def adjust_ptm_positions(sequences, ptm_dict):
     """Adjust PTM positions based on alignment gaps for all proteins."""
@@ -186,76 +249,61 @@ def get_organisms():
 @ptm_comparator.route('/compare_ptms', methods=['GET', 'POST'])
 def align_and_update_ptms():
     if request.method == 'POST':
-        # Get user inputs
         protein_ids = request.form.get('protein_id', '').split(',')
-        protein_ids = [pid.strip() for pid in protein_ids]  # Strip whitespace
+        protein_ids = [pid.strip() for pid in protein_ids]  
         selected_ptms = request.form.get('ptm_type', '').split(',')
         selected_organisms = request.form.get('organism', '').split(',')
-        window_size = float(request.form.get('window', '0.05'))  # Default to 0.05
-    else:  # Handle "Re-Run" (GET request)
+        window_size = float(request.form.get('window', '0.05'))  
+
+    else:  
         protein_ids = request.args.get('protein_id', '').split(',')
         selected_ptms = request.args.get('ptm_type', '').split(',')
         selected_organisms = request.args.get('organism', '').split(',')
         window_size = float(request.args.get('window', '0.05'))
 
-    # If no PTM or organism is selected, consider all of them
     selected_ptms = None if selected_ptms == [''] else selected_ptms
     selected_organisms = None if selected_organisms == [''] else selected_organisms
 
-    session_db = db.session  # SQLAlchemy session
-    
-    # Unified handling for single or multiple proteins
+    session_db = db.session  
+
     if len(protein_ids) == 1:
-        # Single protein case - do BLAST with organism filtering
         protein_id = protein_ids[0]
-        
-        # Use the updated BLAST function with organism filtering
         similar_proteins_ids = run_blast(protein_id, session_db, selected_organisms)
-        
-        # Get the proteins from BLAST results
+
         proteins_to_align = session_db.query(Protein).filter(
             Protein.accession_id.in_(similar_proteins_ids)
         ).all()
-        
-        # Always include the query protein
+
         query_protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
         if query_protein and query_protein not in proteins_to_align:
             proteins_to_align.append(query_protein)
     else:
-        # Multiple proteins case - use the provided proteins
-        # Apply organism filter if specified
         query = session_db.query(Protein).filter(Protein.accession_id.in_(protein_ids))
         if selected_organisms:
             query = query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
         proteins_to_align = query.all()
-    
+
     if not proteins_to_align:
         return jsonify({"error": "No proteins found matching the criteria"}), 400
-        
-    # Common code for both cases
-    aligned_file = align_sequences(proteins_to_align)
+
+    # Alinear secuencias y generar árbol
+    aligned_file, tree_file = align_sequences(proteins_to_align)
     sequences = {record.id: str(record.seq) for record in SeqIO.parse(aligned_file, "fasta")}
-    
-    # Collect PTMs, filtering by selected PTM types
+
     ptm_dict = {}
     for p in proteins_to_align:
         ptms = session_db.query(ProteinHasPTM.position, PTM.type).join(PTM).filter(
             ProteinHasPTM.protein_accession_id == p.accession_id
         )
-        
+
         if selected_ptms:
             ptms = ptms.filter(PTM.type.in_(selected_ptms))
-            
-        ptms = ptms.all()
-        
-        ptm_dict[p.accession_id] = {
-            ptm.position: {"type": ptm.type} for ptm in ptms
-        }
-    
+
+        ptm_dict[p.accession_id] = {ptm.position: {"type": ptm.type} for ptm in ptms.all()}
+
     ptm_data = adjust_ptm_positions(sequences, ptm_dict)
     jaccard_indices = calculate_ptm_jaccard_with_window(ptm_data, sequences, window_size)
-    
-    # Convert tuple keys to strings for JSON serialization
+
     formatted_jaccard_indices = {f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()}
 
     parameters = {
@@ -268,24 +316,29 @@ def align_and_update_ptms():
         "window_size": window_size,
     }
 
-    query = Query(parameters=parameters, summary_table=None, graph=None)
+    query = Query(parameters=json.dumps(parameters), summary_table=None, graph=tree_file)
 
     history = session_db.query(History).filter_by(user_id=current_user.id).first()
     if not history:
         history = History(user_id=current_user.id)
         session_db.add(history)
         session_db.commit()
-    
+
     session_db.add(query)
     history.queries.append(query)
-    session_db.commit()    
+    session_db.commit()
+
+    # ✅ Obtener JSON del árbol de forma correcta
+    tree_json = get_tree_json(query.id).get_json()
 
     return render_template(
         "ptm_interactive.html", 
         sequences=sequences, 
         ptm_data=ptm_data,
-        jaccard_indices=formatted_jaccard_indices,  # Use the formatted version
-        window_size=window_size
+        jaccard_indices=formatted_jaccard_indices,
+        window_size=window_size,
+        query=query,
+        tree_json=json.dumps(tree_json)  
     )
 
 
@@ -294,3 +347,110 @@ def align_and_update_ptms():
 def download_fasta():
     fasta_file_path = "aligned.fasta"  
     return send_file(fasta_file_path, as_attachment=True, download_name="aligned.fasta")
+
+from flask import send_from_directory
+
+
+from ete3 import Tree, TreeStyle, TextFace
+import os
+from flask import send_file
+
+def generate_tree(nwk_path):
+    """Genera un archivo .html desde un .nwk y lo guarda en `results/trees/`."""
+    if not os.path.exists(nwk_path):
+        print(f"⚠️ Archivo {nwk_path} no encontrado.")
+        return None
+
+    print(f"📂 Cargando árbol desde {nwk_path}...")
+    
+    # ✅ Asegurar que el HTML se guarda en la carpeta correcta
+    html_path = os.path.join("results/trees/", os.path.basename(nwk_path).replace(".nwk", ".html"))
+    return generate_tree_html(nwk_path, html_path)
+
+
+def generate_tree_html(tree_file, html_output=None):
+    """Convierte un archivo .nwk en un .html visualizable y lo guarda en `results/trees/`."""
+    if not os.path.exists(tree_file):
+        print(f"⚠️ Archivo {tree_file} no encontrado.")
+        return None
+
+    # ✅ Crear carpeta `results/trees/` si no existe
+    os.makedirs("results/trees/", exist_ok=True)
+
+    # ✅ Asegurar que el HTML se guarda en la carpeta correcta
+    if html_output is None:
+        html_output = os.path.join("results/trees/", os.path.basename(tree_file).replace(".nwk", ".html"))
+
+    try:
+        tree = Tree(tree_file, format=1)  # Forzar lectura con nombres internos
+        ts = TreeStyle()
+        ts.show_leaf_name = True
+        ts.scale = 20
+        ts.title.add_face(TextFace("Árbol filogenético basado en distancias de alineamiento", fsize=12), column=0)
+
+        tree.render(html_output, tree_style=ts)
+        print(f"✅ Árbol convertido a HTML: {html_output}")
+    except Exception as e:
+        print(f"❌ Error al generar HTML: {e}")
+        return None
+
+    return html_output
+
+from flask import jsonify
+from Bio import Phylo
+import json
+
+from flask import jsonify
+from Bio import Phylo
+import json
+
+@ptm_comparator.route('/get_tree_json/<query_id>')
+def get_tree_json(query_id):
+    """Convierte un archivo Newick en JSON para D3.js"""
+    query = db.session.query(Query).filter_by(id=query_id).first()
+    
+    if not query or not query.graph:
+        return jsonify({"error": "Árbol no encontrado"}), 404
+
+    nwk_path = query.graph
+
+    # Leer el árbol en formato Newick
+    try:
+        tree = Phylo.read(nwk_path, "newick")
+    except Exception as e:
+        return jsonify({"error": f"Error leyendo el archivo Newick: {str(e)}"}), 500
+
+    # Convertir a JSON de forma recursiva
+    def tree_to_dict(clade):
+        return {
+            "name": str(clade.name) if clade.name else "Internal",
+            "children": [tree_to_dict(c) for c in clade.clades] if clade.clades else []
+        }
+
+    tree_json = tree_to_dict(tree.root)
+    return jsonify(tree_json)
+
+
+@ptm_comparator.route('/tree_view/<int:query_id>')
+def tree_view(query_id):
+    query = db.session.query(Query).filter_by(id=query_id).first()
+
+    if not query or not query.graph:
+        return "Árbol no disponible", 404
+
+    nwk_path = query.graph
+
+    # Ruta donde guardaremos el .nwk dentro de /static/trees/
+    trees_dir = os.path.join("static", "trees")
+    os.makedirs(trees_dir, exist_ok=True)
+
+    nwk_filename = os.path.basename(nwk_path)
+    static_tree_path = os.path.join(trees_dir, nwk_filename)
+
+    # Si el archivo aún no está en /static/trees, lo copiamos allí
+    if not os.path.exists(static_tree_path):
+        from shutil import copyfile
+        copyfile(nwk_path, static_tree_path)
+
+    return render_template("tree_viewer.html", nwk_file=nwk_filename)
+

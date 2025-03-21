@@ -14,37 +14,66 @@ from routes.jaccarddef import calculate_ptm_jaccard_with_window
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
+import os
+import subprocess
+
 def run_blast(protein_id, session, selected_organisms=None):
     """
-    Run BLASTP to find the most similar proteins from MySQL.
+    Runs BLASTP to find the most similar proteins from MySQL.
     Filters results by organism if specified.
     """
-    # Get the query protein
+    # ✅ Get the query protein
     protein = session.query(Protein).filter_by(accession_id=protein_id).first()
     if not protein:
         return []
 
-    # Save query sequence to a file
+    # ✅ Save query sequence to a file
     query_file = "query.fasta"
     with open(query_file, "w") as f:
         f.write(f">{protein.accession_id}\n{protein.sequence}\n")
 
-    # Get all target proteins, filtered by organism if specified
-    target_query = session.query(Protein)
+    # ✅ Fetch organism IDs using Organism.id (instead of accession_id)
+    organism_ids = []
     if selected_organisms:
-        target_query = target_query.join(Organism).filter(Organism.scientific_name.in_(selected_organisms))
-    
-    # Create a temporary FASTA database with only proteins from selected organisms
+        organism_ids = session.query(Organism.id).filter(
+            Organism.scientific_name.in_(selected_organisms)
+        ).all()
+        organism_ids = [oid[0] for oid in organism_ids]  # Unpack tuples
+
+        # 🔍 Debugging: Show selected organism names and IDs
+        print(f"🔍 DEBUG: Selected organisms: {selected_organisms}")
+        print(f"🔍 DEBUG: Resolved organism IDs: {organism_ids}")
+
+    # ✅ Fetch proteins where `Protein.organism_id` matches `Organism.id`
+    target_query = session.query(Protein)
+    if organism_ids:
+        target_query = target_query.filter(Protein.organism_id.in_(organism_ids))
+
+    target_proteins = target_query.all()
+
+    # 🔍 Debugging: Show the number of proteins found
+    print(f"🔍 DEBUG: Number of proteins found: {len(target_proteins)}")
+
+    # If no proteins were found, print a warning
+    if not target_proteins:
+        print("⚠️ WARNING: No proteins found for the selected organisms!")
+
+
+    # ✅ Write proteins to a FASTA file
     blast_db_file = "temp_blast_db.fasta"
     with open(blast_db_file, "w") as f:
-        for target_protein in target_query.all():
-            if target_protein.sequence:  # Ensure sequence exists
+        for target_protein in target_proteins:
+            if target_protein.sequence:
                 f.write(f">{target_protein.accession_id}\n{target_protein.sequence}\n")
-    
-    # Create a temporary BLAST database
+
+    # 🚨 Final safety check: Ensure the BLAST DB file is not empty
+    if os.path.getsize(blast_db_file) == 0:
+        raise RuntimeError("BLAST database file is empty. No valid protein sequences were written.")
+
+    # ✅ Create the BLAST database
     subprocess.run(["makeblastdb", "-in", blast_db_file, "-dbtype", "prot"], check=True)
-    
-    # Run BLAST against the temporary database
+
+    # ✅ Run BLASTP against the temporary database
     blast_output = "blast_results.txt"
     subprocess.run([
         "blastp", "-query", query_file, "-db", blast_db_file,
@@ -53,7 +82,7 @@ def run_blast(protein_id, session, selected_organisms=None):
         "-out", blast_output
     ], check=True)
 
-    # Parse BLAST results
+    # ✅ Parse BLAST results
     hits = []
     with open(blast_output, "r") as f:
         for line in f:
@@ -63,15 +92,17 @@ def run_blast(protein_id, session, selected_organisms=None):
             hits.append({
                 "id": parts[0],
                 "identity": float(parts[1]),
-                "length": int(parts[2]), 
+                "length": int(parts[2]),
                 "evalue": float(parts[3])
             })
 
-    # Sort by identity (descending) and then by e-value (ascending)
+    # ✅ Sort by identity (descending) and e-value (ascending)
     hits.sort(key=lambda x: (-x["identity"], x["evalue"]))
-    
-    # Return the top 10 hits
+
+    # ✅ Return the top 10 protein IDs
     return [hit["id"] for hit in hits[:10]]
+
+
 
 def align_sequences(proteins):
     """Perform multiple sequence alignment with Clustal Omega."""

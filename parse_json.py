@@ -4,7 +4,7 @@ from models.all_models import *
 
 with app.app_context():
     # Load the JSON file
-    with open("uniprot_all.json", "r") as file:  # Ensure correct path
+    with open("swissprot_data.json", "r") as file:  # Ensure correct path
         data = json.load(file)
 
     print("Data loaded")
@@ -26,6 +26,17 @@ with app.app_context():
     # Process Proteins
     for entry in proteins_data:
 
+        # 🔁 Fix: re-fetch or re-create the correct organism here
+        organism_name = entry['organism']['scientificName']
+        organism_common_name = entry['organism'].get('commonName', None)
+        taxon_id = entry['organism']['taxonId']
+
+        organism = Organism.query.filter_by(accession_id=taxon_id).first()
+        if not organism:
+            organism = Organism(accession_id=taxon_id, common_name=organism_common_name, scientific_name=organism_name)
+            db.session.add(organism)
+            db.session.commit()
+
         subcellular_locations = []
         for comment in entry.get("comments", []):
             if comment.get("type") == "SUBCELLULAR LOCATION":
@@ -43,9 +54,9 @@ with app.app_context():
             sequence=entry['sequence']['value'],
             length=entry['sequence']['length'],
             subcellular_location=subcellular_location_str,
-            organism_id=organism.id,
+            organism_id=organism.id,  # ✅ Now correctly assigned
             database="SwissProt",
-            evidence=0 # entry.get("ProteinExistence")
+            evidence=0  # entry.get("ProteinExistence")
         )
         db.session.add(protein)
         db.session.commit()
@@ -115,6 +126,3 @@ with app.app_context():
 
     db.session.commit()
     print("Database populated successfully!")
-
-
-

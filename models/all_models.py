@@ -3,7 +3,7 @@ from flask_login import UserMixin
 from sqlalchemy import Enum, BLOB, JSON, Text
 from datetime import datetime
 from enum import Enum as PyEnum
-
+from datetime import datetime, timezone
 # Define Enum for Roles
 class RoleType(PyEnum):
     ADMIN = 'admin'
@@ -100,8 +100,8 @@ class Query(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     parameters = db.Column(JSON)
     summary_table = db.Column(BLOB, nullable=True)
-    graph = db.Column(db.String(500), nullable=True)  # ✅ Corrige el problema
-    date = db.Column(db.DateTime, default=datetime.now(), nullable=False)
+    graph = db.Column(db.String(500), nullable=True)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id'))
 
     # Many-to-Many with Proteins

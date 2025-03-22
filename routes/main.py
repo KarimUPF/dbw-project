@@ -16,10 +16,17 @@ def home():
 def browser():
     return render_template('compare.html', title="Browser")
 
+
 @main.route('/history')
 def history():
-    return render_template('history.html', 
-                           title="History", 
-                           username=current_user.username, 
-                           history=History.query.filter_by(user_id=current_user.id).first())
+    user = current_user
+    user_history = History.query.filter_by(user_id=user.id).first()
+
+    if not user_history:
+        return render_template("history.html", username=user.username, history={'queries': []})
+
+    # Orden por defecto: más reciente primero
+    sorted_queries = sorted(user_history.queries, key=lambda q: q.date, reverse=True)
+
+    return render_template("history.html", username=user.username, history={'queries': sorted_queries})
 

@@ -294,17 +294,22 @@ def align_and_update_ptms():
 
     formatted_jaccard_indices = {f"{k[0]}, {k[1]}": v for k, v in jaccard_indices.items()}
 
+    # 🧹 Limpiar datos vacíos
+    cleaned_proteins = [pid for pid in protein_ids if pid]
+    cleaned_ptms = [ptm for ptm in selected_ptms] if selected_ptms else None
+    cleaned_organisms = [org for org in selected_organisms] if selected_organisms else None
+
     parameters = {
-        "protein_ids": protein_ids,
-        "ptm_types": selected_ptms,
-        "organism_filter": selected_organisms,
+        "protein_ids": cleaned_proteins if cleaned_proteins else None,
+        "ptm_types": cleaned_ptms,
+        "organism_filter": cleaned_organisms,
         "sequences": sequences,
         "ptm_data": ptm_data,
         "jaccard_indices": formatted_jaccard_indices,
         "window_size": window_size,
     }
 
-    query = Query(parameters=json.dumps(parameters), summary_table=None, graph=tree_file)
+    query = Query(parameters=parameters, summary_table=None, graph=tree_file)
 
     history = session_db.query(History).filter_by(user_id=current_user.id).first()
     if not history:

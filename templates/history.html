@@ -4,83 +4,115 @@
 
 {% block content %}
 <body>
-    <h1 style="margin-top: 100px;">History of {{ username }}</h1>
-    
-    <div id="search-history">
-        <h4>Last 10 Searches:</h4>
-        <div class="scroll-container">
-            <ol id="history-list"></ol>
-            {% for query in history.queries[:10] %}
-                <li>
-                    <strong>Query:</strong> {{ query.parameters }}
-                </li>
+<h1 style="margin-top: 100px; text-align: center;">History of {{ username }}</h1>
+
+<div style="max-width: 1000px; margin: auto;">
+
+    <h3>Filters</h3>
+    <div style="margin-bottom: 20px;">
+        <label for="filter-protein">Protein ID:</label>
+        <input type="text" id="filter-protein" placeholder="e.g., C9JLW8">
+
+        <label for="filter-ptm">PTM Type:</label>
+        <input type="text" id="filter-ptm" placeholder="e.g., phospho">
+
+        <label for="filter-organism">Organism:</label>
+        <input type="text" id="filter-organism" placeholder="e.g., Mus musculus">
+
+        <label for="sort-order">Sort by Date:</label>
+        <select id="sort-order">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+        </select>
+    </div>
+
+    <ol id="history-list" style="padding-left: 20px;">
+        {% for query in history.queries %}
+            <li class="query-item"
+                data-proteins="{{ query.parameters['protein_ids'] | join(',') }}"
+                data-ptms="{{ query.parameters['ptm_types'] | join(',') if query.parameters['ptm_types'] else '' }}"
+                data-organisms="{{ query.parameters['organism_filter'] | join(',') if query.parameters['organism_filter'] else '' }}"
+                data-date="{{ query.date.isoformat() }}"
+                style="margin-bottom: 20px; background-color: #f4f4f4; padding: 15px; border-radius: 8px;">
+                
+                <p><strong>Date:</strong> {{ query.date.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                <p><strong>Proteins:</strong> {{ query.parameters['protein_ids'] | join(', ') }}</p>
+                <p><strong>PTMs:</strong>
+                    {% if query.parameters['ptm_types'] %}
+                        {{ query.parameters['ptm_types'] | join(', ') }}
+                    {% else %}
+                        Any
+                    {% endif %}
+                </p>
+                <p><strong>Organisms:</strong>
+                    {% if query.parameters['organism_filter'] %}
+                        {{ query.parameters['organism_filter'] | join(', ') }}
+                    {% else %}
+                        All
+                    {% endif %}
+                </p>
+                <p><strong>Window size:</strong> {{ query.parameters['window_size'] }}</p>
+
                 <a href="{{ url_for('ptm_comparator.align_and_update_ptms', 
                         protein_id=','.join(query.parameters['protein_ids']),
                         ptm_type=','.join(query.parameters['ptm_types'] or []),
                         organism=','.join(query.parameters['organism_filter'] or []),
                         window=query.parameters['window_size']
-                    )}}">
-                    <button>Re-Run</button>
+                    ) }}">
+                    <button style="background-color: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        Re-Run
+                    </button>
                 </a>
-            {% endfor %}
-        </div>
-    </div>
-    <button onclick="showFullHistory()">Show Full History</button>
+            </li>
+        {% endfor %}
+    </ol>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let username = "{{ username }}";  
-            document.getElementById("history-title").innerText = "History of " + username;
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const proteinInput = document.getElementById("filter-protein");
+        const ptmInput = document.getElementById("filter-ptm");
+        const organismInput = document.getElementById("filter-organism");
+        const sortOrder = document.getElementById("sort-order");
+        const historyItems = Array.from(document.querySelectorAll(".query-item"));
+
+        function filterAndSort() {
+            const proteinFilter = proteinInput.value.toLowerCase();
+            const ptmFilter = ptmInput.value.toLowerCase();
+            const organismFilter = organismInput.value.toLowerCase();
+            const order = sortOrder.value;
+
+            // Filter
+            historyItems.forEach(item => {
+                const proteins = item.dataset.proteins.toLowerCase();
+                const ptms = item.dataset.ptms.toLowerCase();
+                const organisms = item.dataset.organisms.toLowerCase();
+
+                const matchesProtein = !proteinFilter || proteins.includes(proteinFilter);
+                const matchesPTM = !ptmFilter || ptms.includes(ptmFilter);
+                const matchesOrganism = !organismFilter || organisms.includes(organismFilter);
+
+                item.style.display = (matchesProtein && matchesPTM && matchesOrganism) ? "block" : "none";
+            });
+
+            // Sort
+            const sortedItems = historyItems.sort((a, b) => {
+                const dateA = new Date(a.dataset.date);
+                const dateB = new Date(b.dataset.date);
+                return order === "asc" ? dateA - dateB : dateB - dateA;
+            });
+
+            // Re-append sorted elements
+            const list = document.getElementById("history-list");
+            sortedItems.forEach(item => list.appendChild(item));
+        }
+
+        // Bind events
+        [proteinInput, ptmInput, organismInput, sortOrder].forEach(input => {
+            input.addEventListener("input", filterAndSort);
+            input.addEventListener("change", filterAndSort);
         });
-
-
-        function generateMockHistory() {
-            const mockHistory = [
-                { query: "P12345, P67890", alignment: "alignment1.clustal", heatmap: "heatmap1.png", tree: "tree1.png" },
-                { query: "Q11111, Q22222", alignment: "alignment2.clustal", heatmap: "heatmap2.png", tree: "tree2.png" },
-                { query: "R33333, R44444", alignment: "alignment3.clustal", heatmap: "heatmap3.png", tree: "tree3.png" },
-                { query: "S55555, S66666", alignment: "alignment4.clustal", heatmap: "heatmap4.png", tree: "tree4.png" },
-                { query: "T77777, T88888", alignment: "alignment5.clustal", heatmap: "heatmap5.png", tree: "tree5.png" },
-                { query: "U99999, U00000", alignment: "alignment6.clustal", heatmap: "heatmap6.png", tree: "tree6.png" },
-                { query: "V12321, V32123", alignment: "alignment7.clustal", heatmap: "heatmap7.png", tree: "tree7.png" },
-                { query: "W45654, W65456", alignment: "alignment8.clustal", heatmap: "heatmap8.png", tree: "tree8.png" },
-                { query: "X78987, X98789", alignment: "alignment9.clustal", heatmap: "heatmap9.png", tree: "tree9.png" },
-                { query: "Y10101, Y20202", alignment: "alignment10.clustal", heatmap: "heatmap10.png", tree: "tree10.png" },
-                { query: "hola, adios", alignment: "alignment11.clustal", heatmap: "heatmap11.png", tree: "tree11.png" }
-            ];  
-            localStorage.setItem("searchHistory", JSON.stringify(mockHistory));
-            displayHistory();
-        }
-      
-        function displayHistory() {
-            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
-            let historyList = document.getElementById("history-list");
-            historyList.innerHTML = history.slice(0, 10).map(item => `
-            <li>
-                <strong>Query:</strong> ${item.query} #Nombre de la proteina buscada
-                <strong>Alignment:</strong> ${item.alignment} #Clustal alignment con los PTM en formato????
-                <strong>Heatmap:</strong> <img src="${item.heatmap}" width="50"> #Imagen del heatmap
-                <strong>Tree:</strong> <img src="${item.tree}" width="50"> #Imagen del phylogenetic tree
-            </li>`
-            ).join('');
-        }
-        
-        window.onload = displayHistory;
-
-        function showFullHistory() {
-            let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
-            let historyList = document.getElementById("history-list");
-            historyList.innerHTML = history.map(item => `
-            <li>
-                <strong>Query:</strong> ${item.query} #Nombre de la proteina buscada
-                <strong>Alignment:</strong> ${item.alignment} #Clustal alignment con los PTM en formato????
-                <strong>Heatmap:</strong> <img src="${item.heatmap}" width="50"> #Imagen del heatmap
-                <strong>Tree:</strong> <img src="${item.tree}" width="50"> #Imagen del phylogenetic tree
-            </li>`
-            ).join('');
-        }
-
-    </script>
-
-
+    });
+</script>
+</body>
 {% endblock %}

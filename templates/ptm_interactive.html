@@ -45,9 +45,12 @@
 
 <body>
     <h1 style="margin-top: 100px; margin-bottom: 30px;">Post-Translational Modifications Viewer</h1>
-    <div class="scroll-container">
-        <svg width="100%" height="500"></svg>
+    <div style="padding: 40px; margin: 0 60px;">
+        <div style="overflow-x: auto; border: 1px solid #ccc; width: 100%;">
+            <svg width="100%" height="500"></svg>
+        </div>
     </div>
+    
     <div class="ptm-tooltip"></div>
 
     <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
@@ -61,9 +64,35 @@
         <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
     </div>
     
-    <h1 style="margin-top: 30px; margin-bottom: 50px;">Jaccard Similarity Heatmap</h1>
-    <svg id="heatmap" width="600" height="600" style="margin-bottom: 30px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); border-radius: 10px;"></svg>
-    <div class="heatmap-tooltip"></div>
+    <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
+<div style="padding: 40px; margin: 0 60px;">
+    <h1 style="text-align: center; margin-bottom: 40px;">Jaccard Similarity Heatmap</h1>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
+  
+    <!-- Heatmap Jaccard -->
+    <div style="flex: 1; min-width: 400px; max-width: 900px;">
+        <svg id="heatmap" width="600" height="600" ></svg>
+        <div class="heatmap-tooltip"></div>
+    </div>
+  
+      <!-- Controles del Heatmap -->
+      <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+        <div id="color-controls" style="margin-bottom: 20px;">
+            <label for="min-color">Min Color:</label>
+            <input type="color" id="min-color" value="#ffffcc" style="margin-right: 20px;">
+            <label for="max-color">Max Color:</label>
+            <input type="color" id="max-color" value="#800026">
+        </div>
+        <div style="margin-bottom: 100px; display: flex; flex-direction: column; gap: 15px;">
+            <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
+            <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>
+        </div>        
+      </div>
+  
+    </div>
+  </div>
+  
 
     <script>
 
@@ -96,6 +125,7 @@ svg.selectAll(".protein-label")
     .attr("x", margin.left - 10)
     .attr("y", d => yScale(d))
     .attr("text-anchor", "end")
+    .attr("font-family", "Georgia") 
     .text(d => d);
 
 // Define color scheme for amino acids (AA)
@@ -374,205 +404,225 @@ document.getElementById("close-ptm-modal").addEventListener("click", function() 
 
 </script>
 
+
+
+
+
 <script>
-
 const heatmapTooltip = d3.select(".heatmap-tooltip");
-
-// Add Jaccard Heatmap
 const heatmapSvg = d3.select("#heatmap");
-const heatmapMargin = { top: 100, right: 50, bottom: 50, left: 100 };
+const heatmapMargin = { top: 100, right: 50, bottom: 100, left: 0 };
 const heatmapWidth = 600 - heatmapMargin.left - heatmapMargin.right;
 const heatmapHeight = 600 - heatmapMargin.top - heatmapMargin.bottom;
 
 const proteinIds = Object.keys(sequences);
 const cellSize = Math.min(heatmapWidth, heatmapHeight) / proteinIds.length;
 
-const colorScale = d3.scaleSequential()
-    .domain([0, 1])
-    .interpolator(d3.interpolateYlOrRd);
-
 const heatmapG = heatmapSvg.append("g")
     .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
 
-const userWindowSize = JSON.parse('{{ window_size | default(0.05) | tojson | safe }}');  // Fetch user-defined window size from the backend
+const defs = heatmapSvg.append("defs");
+const gradient = defs.append("linearGradient")
+    .attr("id", "legend-gradient")
+    .attr("x1", "0%").attr("x2", "100%")
+    .attr("y1", "0%").attr("y2", "0%");
+gradient.selectAll("stop")
+    .data([{ offset: "0%", color: "#ffffcc" }, { offset: "100%", color: "#800026" }])
+    .enter().append("stop")
+    .attr("offset", d => d.offset)
+    .attr("stop-color", d => d.color);
 
-// Replace the existing calculateJaccardIndices function with:
 const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
 const jaccardIndices = {};
-
-// Convert Python tuples to JavaScript format
-// Convert Python string format to JavaScript format
 Object.entries(jaccard_indices).forEach(([key, value]) => {
     const [prot1, prot2] = key.split(', ');
-    // Format the key consistently
     const cleanKey1 = `${prot1.replace(/['"()]/g, '')}-${prot2.replace(/['"()]/g, '')}`;
     const cleanKey2 = `${prot2.replace(/['"()]/g, '')}-${prot1.replace(/['"()]/g, '')}`;
     jaccardIndices[cleanKey1] = value;
     jaccardIndices[cleanKey2] = value;
 });
+proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
 
-// For identical proteins, set the Jaccard index to 1
-proteinIds.forEach(id => {
-    jaccardIndices[`${id}-${id}`] = 1;
-});
+let minColor = document.getElementById("min-color").value;
+let maxColor = document.getElementById("max-color").value;
+let colorScale = d3.scaleLinear().domain([0, 1]).range([minColor, maxColor]);
 
-// Create heatmap cells
-proteinIds.forEach((row, i) => {
-    proteinIds.forEach((col, j) => {
-        const key = `${row}-${col}`;
-        const value = jaccardIndices[key] || 0;
-        
-        heatmapG.append("rect")
-            .attr("class", "heatmap-cell")
-            .attr("x", j * cellSize)
-            .attr("y", i * cellSize)
-            .attr("width", cellSize)
-            .attr("height", cellSize)
-            .attr("fill", colorScale(value))
-            .on("mouseover", function(event, d) {
-                heatmapTooltip.style("display", "block")
-                       .style("left", (event.pageX + 10) + "px")
-                       .style("top", (event.pageY - 10) + "px")
-                       .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
-                              <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
-            })
-            .on("mouseout", function() {
-                heatmapTooltip.style("display", "none");
-            });
-    });
-});
+function updateLegendGradient() {
+    heatmapSvg.select("defs #legend-gradient").selectAll("stop")
+        .data([
+            { offset: "0%", color: minColor },
+            { offset: "100%", color: maxColor }
+        ])
+        .join("stop")
+        .attr("offset", d => d.offset)
+        .attr("stop-color", d => d.color);
+}
 
-// Add row labels
-heatmapG.selectAll(".row-label")
-    .data(proteinIds)
-    .enter().append("text")
-    .attr("class", "heatmap-label")
-    .attr("x", -5)
-    .attr("y", (d, i) => i * cellSize + cellSize/2)
-    .attr("text-anchor", "end")
-    .attr("alignment-baseline", "middle")
-    .text(d => d);
-
-// Add column labels
-heatmapG.selectAll(".col-label")
-    .data(proteinIds)
-    .enter().append("text")
-    .attr("class", "heatmap-label")
-    .attr("x", (d, i) => i * cellSize + cellSize/2)
-    .attr("y", -5)
-    .attr("text-anchor", "start")
-    .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize/2}, -5)`)
-    .text(d => d);
-
-    </script>    
-
-<div>
-    <div style="margin-bottom: 100px;">
-        <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
-        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>    
-    </div>
-    
-</div>
-
-<script>
-    document.getElementById("download-csv").addEventListener("click", function() {
-        let csvContent = "Protein 1\tProtein 2\tJaccard Index\n";
-        const seenPairs = new Set(); // Track pairs to avoid duplicates
-    
-        // Loop over protein pairs
-        proteinIds.forEach((row, i) => {
-            proteinIds.forEach((col, j) => {
-                if (i <= j) { // Avoid duplicates (A-B, not B-A)
-                    const key = `${row}-${col}`;
-                    const jaccardValue = jaccardIndices[key] || 0.0; // Default to 0 if missing
-    
-                    if (!seenPairs.has(`${col}-${row}`)) { // Avoid reverse duplicates
-                        csvContent += `${row}\t${col}\t${jaccardValue.toFixed(3)}\n`;
-                        seenPairs.add(key);
-                    }
-                }
-            });
-        });
-    
-        // Convert to CSV format and trigger download
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "jaccard_indices.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-    </script>
-    
-
-<script>
-    document.getElementById("download-heatmap").addEventListener("click", function() {
-    const svgElement = document.getElementById("heatmap");
-    const serializer = new XMLSerializer();
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    // Step 1: Temporarily add Jaccard index labels
-    const heatmapG = d3.select("#heatmap g");
-
-    const tempLabels = []; // Store added labels to remove later
+function drawHeatmap() {
+    heatmapG.selectAll("*").remove();
 
     proteinIds.forEach((row, i) => {
         proteinIds.forEach((col, j) => {
             const key = `${row}-${col}`;
             const value = jaccardIndices[key] || 0;
 
-            // Add text labels (Jaccard values)
-            const label = heatmapG.append("text")
-                .attr("x", j * cellSize + cellSize / 2)
-                .attr("y", i * cellSize + cellSize / 2)
-                .attr("text-anchor", "middle")
-                .attr("alignment-baseline", "middle")
-                .attr("fill", "black")
-                .attr("font-size", "12px")
-                .text(value.toFixed(3));
-
-            tempLabels.push(label); // Store label for removal
+            heatmapG.append("rect")
+                .attr("x", j * cellSize)
+                .attr("y", i * cellSize)
+                .attr("width", cellSize)
+                .attr("height", cellSize)
+                .attr("fill", colorScale(value))
+                .on("mouseover", function(event) {
+                    heatmapTooltip.style("display", "block")
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 10) + "px")
+                        .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                               <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
+                })
+                .on("mouseout", function() {
+                    heatmapTooltip.style("display", "none");
+                });
         });
     });
 
-    // Convert the modified SVG to PNG
-    const svgString = serializer.serializeToString(svgElement);
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+    // Labels
+    heatmapG.selectAll(".row-label")
+        .data(proteinIds)
+        .enter().append("text")
+        .attr("class", "heatmap-label")
+        .attr("x", -5)
+        .attr("y", (d, i) => i * cellSize + cellSize / 2)
+        .attr("text-anchor", "end")
+        .attr("alignment-baseline", "middle")
+        .text(d => d);
 
+    heatmapG.selectAll(".col-label")
+        .data(proteinIds)
+        .enter().append("text")
+        .attr("class", "heatmap-label")
+        .attr("x", (d, i) => i * cellSize + cellSize / 2)
+        .attr("y", -5)
+        .attr("text-anchor", "start")
+        .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize/2}, -5)`)
+        .text(d => d);
+
+    // LEGEND
+    const legendWidth = 200, legendHeight = 20;
+    const legendX = (proteinIds.length * cellSize - legendWidth) / 2;
+    const legend = heatmapSvg.append("g")
+        .attr("id", "color-legend")
+        .attr("transform", `translate(${heatmapMargin.left + legendX},${heatmapMargin.top + proteinIds.length * cellSize + 40})`);
+
+    legend.append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#legend-gradient)")
+        .style("stroke", "black");
+
+    legend.append("text")
+        .attr("x", 0)
+        .attr("y", -5)
+        .text("Jaccard Index")
+        .style("font-size", "12px")
+        .style("font-weight", "bold");
+
+    legend.append("text")
+        .attr("x", 0)
+        .attr("y", legendHeight + 15)
+        .text("0.0");
+    legend.append("text")
+        .attr("x", legendWidth)
+        .attr("y", legendHeight + 15)
+        .attr("text-anchor", "end")
+        .text("1.0");
+}
+
+document.getElementById("min-color").addEventListener("input", function() {
+    minColor = this.value;
+    colorScale.range([minColor, maxColor]);
+    updateLegendGradient();
+    drawHeatmap();
+});
+
+document.getElementById("max-color").addEventListener("input", function() {
+    maxColor = this.value;
+    colorScale.range([minColor, maxColor]);
+    updateLegendGradient();
+    drawHeatmap();
+});
+
+drawHeatmap();
+</script>
+
+<script>
+// CSV download
+document.getElementById("download-csv").addEventListener("click", function() {
+    let csvContent = "Protein 1\tProtein 2\tJaccard Index\n";
+    const seenPairs = new Set();
+    proteinIds.forEach((row, i) => {
+        proteinIds.forEach((col, j) => {
+            if (i <= j) {
+                const key = `${row}-${col}`;
+                const jaccardValue = jaccardIndices[key] || 0.0;
+                if (!seenPairs.has(`${col}-${row}`)) {
+                    csvContent += `${row}\t${col}\t${jaccardValue.toFixed(3)}\n`;
+                    seenPairs.add(key);
+                }
+            }
+        });
+    });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "jaccard_indices.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+</script>
+
+<script>
+// PNG download
+document.getElementById("download-heatmap").addEventListener("click", function() {
+    const svgElement = document.getElementById("heatmap");
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     const img = new Image();
+    const scaleFactor = 2;
+
     img.onload = function () {
-        canvas.width = svgElement.clientWidth * 2;  // Increase resolution
-        canvas.height = svgElement.clientHeight * 2;
-        context.fillStyle = "white";  // Ensure white background
+        canvas.width = svgElement.clientWidth * scaleFactor;
+        canvas.height = svgElement.clientHeight * scaleFactor;
+        context.fillStyle = "white";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url);
-
-        // Step 2: Remove the temporary labels after download
-        tempLabels.forEach(label => label.remove());
-
-        // Convert to PNG and trigger download
         const pngUrl = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
-        downloadLink.download = "jaccard_heatmap.png";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const link = document.createElement("a");
+        link.href = pngUrl;
+        link.download = "jaccard_heatmap.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
     img.src = url;
 });
 </script>
-<div style="display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start;">
 
-    <div style="margin-top: 60px;">
+
+
+
+<div style="padding: 40px; margin: 0 60px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
+  
+    <!-- Árbol filogenético clásico -->
+    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
         <h1 style="margin-bottom: 20px;">Phylogenetic Tree</h1>
 
-        <!-- Customization Panel -->
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">
             <label for="tree-style">Tree style:</label>
             <select id="tree-style">
@@ -583,35 +633,32 @@ heatmapG.selectAll(".col-label")
 
             <label for="branch-style">Branch style:</label>
             <select id="branch-style">
-                <option value="line">Straight</option>
                 <option value="curve">Curved</option>
+                <option value="line">Straight</option>
             </select>
 
             <label for="node-color">Node color:</label>
             <input type="color" id="node-color" value="#4682B4">
 
             <label for="branch-color">Branch color:</label>
-            <input type="color" id="branch-color" value="#0000ff">
+            <input type="color" id="branch-color" value="#4A90E2">
 
             <label for="phylo-size">Tree size:</label>
             <input type="range" id="phylo-size" min="400" max="2000" value="900">
         </div>
 
-        <!-- Scrollable Container for SVG -->
-        <div id="tree-container-wrapper" style="overflow-x: auto; overflow-y: auto; border: 1px solid #ccc; max-height: 1000px; max-width: 100%;">
-            <div id="tree-container"></div>
-        </div>
+        <div id="tree-container-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%;">
+            <div id="tree-container" style="min-width: 900px;"></div>
+        </div>      
 
         <div style="margin-top: 20px; text-align: center;">
-            <button id="download-tree" class="btn btn-primary">Download PNG</button>
+            <button id="download-tree" class="btn btn-primary">Download Phylogenetic Tree (PNG)</button>
         </div>
     </div>
 
-  
-    <!-- NEW CODE: Phylogenetic Tree Section -->
-    <!-- Jaccard Similarity Tree Controls and Container -->
-    <div style="margin-top: 60px;">
-        <h1 style="margin-bottom: 20px;">Phylogenetic Tree Based on Jaccard Similarity</h1>
+    <!-- Árbol basado en similitud de Jaccard -->
+    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+        <h1 style="margin-bottom: 20px;">Jaccard Similarity Tree</h1>
 
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
             <label for="jaccard-tree-style">Tree style:</label>
@@ -621,32 +668,34 @@ heatmapG.selectAll(".col-label")
                 <option value="circular">Circular</option>
             </select>
 
+            <label for="jaccard-line-type">Branch style:</label>
+            <select id="jaccard-line-type">
+                <option value="curved">Curved</option>
+                <option value="straight">Straight</option>
+            </select>
+
             <label for="jaccard-node-color">Node color:</label>
             <input type="color" id="jaccard-node-color" value="#4682B4">
 
             <label for="jaccard-link-color">Branch color:</label>
             <input type="color" id="jaccard-link-color" value="#4A90E2">
 
-            <label for="jaccard-line-type">Branch type:</label>
-            <select id="jaccard-line-type">
-                <option value="straight">Straight</option>
-                <option value="curved">Curved</option>
-            </select>
-
             <label for="jaccard-size">Tree size:</label>
             <input type="range" id="jaccard-size" min="400" max="2000" value="900">
         </div>
 
-        <div id="jaccard-tree-wrapper" style="overflow-x: auto; overflow-y: auto; max-height: 1000px; max-width: 100%;">
-        <svg id="jaccard-phylotree" width="900" height="600"></svg>
-        <div style="margin-top: 60px;">
-            <button id="download-jaccard-png" class="btn btn-primary">Download PNG</button>
+        <div id="jaccard-tree-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%; margin-top: 15px;">
+            <svg id="jaccard-phylotree" width="900" height="600"></svg>
         </div>
-        
+             
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="download-jaccard-png" class="btn btn-primary">Download Jaccard Similarity Tree (PNG)</button>
         </div>
     </div>
 </div>
 
+<!-- SCRIPT: Árbol filogenético clásico -->
 <script>
     var treeData = {{ tree_json | safe }};
 
@@ -673,17 +722,14 @@ heatmapG.selectAll(".col-label")
 
         const root = d3.hierarchy(treeData);
 
-        let treeLayout;
-        if (style === "radial" || style === "circular") {
-            treeLayout = d3.cluster().size([360, Math.min(width, height) / 2 - 100]);
-        } else {
-            treeLayout = d3.tree().size([height, width - 200]);
-        }
+        let treeLayout = (style === "radial" || style === "circular")
+            ? d3.cluster().size([360, Math.min(width, height) / 2 - 100])
+            : d3.tree().size([height, width - 200]);
 
         treeLayout(root);
 
-        const linkGenerator = branchStyle === "curve" ?
-            (style === "circular"
+        const linkGenerator = branchStyle === "curve"
+            ? (style === "circular"
                 ? d3.linkRadial().angle(d => d.x * Math.PI / 180).radius(d => d.y)
                 : d3.linkHorizontal().x(d => d.y).y(d => d.x))
             : null;
@@ -691,58 +737,54 @@ heatmapG.selectAll(".col-label")
         g.selectAll(".link")
             .data(root.links())
             .enter().append("path")
-            .attr("class", "link")
             .attr("fill", "none")
             .attr("stroke", branchColor)
             .attr("stroke-width", 1.5)
             .attr("d", d => {
                 if (branchStyle === "curve") {
                     return linkGenerator(d);
+                } else if (style === "circular") {
+                    const sx = radialX(d.source.x, d.source.y);
+                    const sy = radialY(d.source.x, d.source.y);
+                    const tx = radialX(d.target.x, d.target.y);
+                    const ty = radialY(d.target.x, d.target.y);
+                    return `M${sx},${sy} L${tx},${ty}`;
                 } else {
-                    if (style === "circular") {
-                        let sx = radialX(d.source.x, d.source.y);
-                        let sy = radialY(d.source.x, d.source.y);
-                        let tx = radialX(d.target.x, d.target.y);
-                        let ty = radialY(d.target.x, d.target.y);
-                        return `M${sx},${sy} L${tx},${ty}`;
-                    } else {
-                        return `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
-                    }
+                    return `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
                 }
             });
 
         const node = g.selectAll(".node")
             .data(root.descendants())
             .enter().append("g")
-            .attr("class", "node")
             .attr("transform", d => {
                 if (style === "circular") {
-                    let x = radialX(d.x, d.y);
-                    let y = radialY(d.x, d.y);
+                    const x = radialX(d.x, d.y);
+                    const y = radialY(d.x, d.y);
                     return `translate(${x},${y})`;
                 } else {
                     return `translate(${d.y},${d.x})`;
                 }
             });
 
-        node.append("rect")
-            .attr("width", 10)
-            .attr("height", 10)
+        node.append("circle")
+            .attr("r", d => d.children ? 6 : 4)
             .attr("fill", nodeColor)
-            .attr("stroke", "black");
+            .attr("stroke", "black")
+            .attr("stroke-width", 0.5);
 
         node.append("text")
             .attr("x", 12)
             .attr("dy", ".35em")
-            .style("font-size", "12px")
-            .style("font-family", "sans-serif")
+            .style("font-size", "13px")
+            .style("font-family", "Georgia")
             .text(d => d.data.name.includes("Inner") ? "" : d.data.name);
     }
 
-    // Initial render
-    drawTree("rectangular", "#4682B4", "#0000ff", "line", 900, 630);
+    // Render inicial
+    drawTree("rectangular", "#4682B4", "#4A90E2", "curve");
 
-    // Interactivity
+    // Interactividad
     d3.selectAll("#tree-style, #branch-style, #node-color, #branch-color").on("change", () => {
         const style = document.getElementById("tree-style").value;
         const branchStyle = document.getElementById("branch-style").value;
@@ -761,14 +803,12 @@ heatmapG.selectAll(".col-label")
         drawTree(style, nodeColor, branchColor, branchStyle, size, size * 0.7);
     });
 
-    // PNG Export
     document.getElementById("download-tree").addEventListener("click", function () {
         const svgElement = document.querySelector("#tree-container svg");
         const serializer = new XMLSerializer();
         const svgString = serializer.serializeToString(svgElement);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);
-
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
         const img = new Image();
@@ -794,29 +834,22 @@ heatmapG.selectAll(".col-label")
     });
 </script>
 
-
-
+<!-- VARIABLES + RENDER JACCARD -->
 <script>
-// Aquí están tus variables necesarias
-const proteinIds = Object.keys(sequences);
+    const proteinIds = Object.keys(sequences);
+    const rawJaccard = JSON.parse('{{ jaccard_indices | tojson | safe }}');
+    const jaccardIndices = {};
 
-const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
-const jaccardIndices = {};
-Object.entries(jaccard_indices).forEach(([key, value]) => {
-    const [prot1, prot2] = key.split(', ');
-    const cleanKey1 = `${prot1.replace(/['"()]/g, '')}-${prot2.replace(/['"()]/g, '')}`;
-    const cleanKey2 = `${prot2.replace(/['"()]/g, '')}-${prot1.replace(/['"()]/g, '')}`;
-    jaccardIndices[cleanKey1] = value;
-    jaccardIndices[cleanKey2] = value;
-});
-
-proteinIds.forEach(id => {
-    jaccardIndices[`${id}-${id}`] = 1;
-});
+    Object.entries(rawJaccard).forEach(([key, value]) => {
+        const [a, b] = key.split(', ').map(s => s.replace(/['"()]/g, ''));
+        jaccardIndices[`${a}-${b}`] = value;
+        jaccardIndices[`${b}-${a}`] = value;
+    });
+    proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
 </script>
 
 <script>
-    function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'straight', width = 900, height = 600) {
+    function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'curved', width = 900, height = 600) {
         const svg = d3.select("#jaccard-phylotree");
         svg.selectAll("*").remove();
         svg.attr("width", width).attr("height", height);
@@ -931,6 +964,7 @@ proteinIds.forEach(id => {
             .attr("x", 10)
             .attr("dy", "0.31em")
             .style("font-size", "13px")
+            .style("font-family", "Georgia") 
             .text(d => d.data.name);
     }
 

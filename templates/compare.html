@@ -40,6 +40,8 @@
 
         <button type="submit">Compare</button>
     </form>
+
+    <div id="progress-messages" style="margin-top: 30px; font-weight: bold; color: #333;"></div>
     </body>
 </div>
 
@@ -127,9 +129,6 @@
         }
     });
 </script>
-
-
-   
 
     <script>
         let selectedPtmTypes = [];
@@ -269,5 +268,38 @@
             });
         });
     </script>
+
+<script>
+    document.getElementById("compare-form").addEventListener("submit", function (e) {
+        const progressDiv = document.getElementById("progress-messages");
+
+        // Clear previous messages
+        progressDiv.innerHTML = "";
+
+        // Show initial status message
+        const steps = [
+            "Running BLAST search...",
+            "Aligning sequences...",
+            "Calculating Jaccard similarity...",
+            "Generating phylogenetic tree...",
+            "Rendering visualization..."
+        ];
+
+        let index = 0;
+
+        function showNextStep() {
+            if (index < steps.length) {
+                progressDiv.innerHTML += `<p>${steps[index]}</p>`;
+                index++;
+                setTimeout(showNextStep, 500); // Simulate progress with delay (optional)
+            }
+        }
+
+        showNextStep();
+
+        // Continue with form submission
+    });
+</script>
+
 </body>
 {% endblock %}

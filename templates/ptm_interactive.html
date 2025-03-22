@@ -71,24 +71,71 @@
     <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
   
     <!-- Heatmap Jaccard -->
-    <div style="flex: 1; min-width: 400px; max-width: 900px;">
-        <svg id="heatmap" width="600" height="600" ></svg>
+    <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
+        <svg id="heatmap" width="600" height="600"></svg>
         <div class="heatmap-tooltip"></div>
+    
     </div>
   
       <!-- Controles del Heatmap -->
-      <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-        <div id="color-controls" style="margin-bottom: 20px;">
+    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+        <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
             <label for="min-color">Min Color:</label>
-            <input type="color" id="min-color" value="#ffffcc" style="margin-right: 20px;">
+            <input type="color" id="min-color" value="#ffffcc">
             <label for="max-color">Max Color:</label>
             <input type="color" id="max-color" value="#800026">
         </div>
-        <div style="margin-bottom: 100px; display: flex; flex-direction: column; gap: 15px;">
-            <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
-            <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>
-        </div>        
-      </div>
+
+        <!-- Nuevo selector de estilo de heatmap -->
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">            <label for="heatmap-style">Heatmap style:</label>
+            <select id="heatmap-style">
+            <option value="square" selected>Square</option>
+            <option value="circle">Circle</option>
+            </select>
+        </div>
+  
+        
+        <!-- Contenedor común con flex-column alineada a la izquierda -->
+        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
+    
+            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                <input type="checkbox" id="show-values" checked>
+                <span>Show Jaccard values</span>
+            </label>
+        
+            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                <input type="checkbox" id="upper-triangle-only">
+                <span>Show only upper triangle</span>
+            </label>
+
+            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                <input type="checkbox" id="toggle-legend" checked>
+                <span>Show color legend</span>
+              </label>
+              
+        
+            </div>
+        
+
+        
+    </div>
+
+    <!-- CONTENEDOR FLEX PARA ALINEAR BOTONES -->
+    <div style="display: flex; justify-content: space-between; width: 100%;">
+
+        <!-- Columna izquierda: botón PNG -->
+        <div style="flex: 1; display: flex; justify-content: center;">
+        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>
+        </div>
+    
+        <!-- Columna derecha: botón CSV -->
+        <div style="flex: 1; display: flex; justify-content: center;">
+        <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
+        </div>
+    
+    </div>
+  
+
   
     </div>
   </div>
@@ -411,7 +458,7 @@ document.getElementById("close-ptm-modal").addEventListener("click", function() 
 <script>
 const heatmapTooltip = d3.select(".heatmap-tooltip");
 const heatmapSvg = d3.select("#heatmap");
-const heatmapMargin = { top: 100, right: 50, bottom: 100, left: 0 };
+const heatmapMargin = { top: 100, right: 50, bottom: 100, left: 100 };
 const heatmapWidth = 600 - heatmapMargin.left - heatmapMargin.right;
 const heatmapHeight = 600 - heatmapMargin.top - heatmapMargin.bottom;
 
@@ -457,35 +504,70 @@ function updateLegendGradient() {
         .attr("offset", d => d.offset)
         .attr("stop-color", d => d.color);
 }
-
 function drawHeatmap() {
     heatmapG.selectAll("*").remove();
 
+    const showValues = document.getElementById("show-values").checked;
+    const upperOnly = document.getElementById("upper-triangle-only").checked;
+    const heatmapStyle = document.getElementById("heatmap-style").value; // 👈 nuevo
+
     proteinIds.forEach((row, i) => {
         proteinIds.forEach((col, j) => {
+            if (upperOnly && j < i) return;
+
             const key = `${row}-${col}`;
             const value = jaccardIndices[key] || 0;
 
-            heatmapG.append("rect")
-                .attr("x", j * cellSize)
-                .attr("y", i * cellSize)
-                .attr("width", cellSize)
-                .attr("height", cellSize)
-                .attr("fill", colorScale(value))
-                .on("mouseover", function(event) {
-                    heatmapTooltip.style("display", "block")
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 10) + "px")
-                        .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
-                               <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
-                })
-                .on("mouseout", function() {
-                    heatmapTooltip.style("display", "none");
-                });
+            if (heatmapStyle === "square") {
+                // 🔷 Estilo cuadrado
+                heatmapG.append("rect")
+                    .attr("x", j * cellSize)
+                    .attr("y", i * cellSize)
+                    .attr("width", cellSize)
+                    .attr("height", cellSize)
+                    .attr("fill", colorScale(value))
+                    .on("mouseover", function (event) {
+                        heatmapTooltip.style("display", "block")
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px")
+                            .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                                   <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
+                    })
+                    .on("mouseout", function () {
+                        heatmapTooltip.style("display", "none");
+                    });
+            } else if (heatmapStyle === "circle") {
+                // ⚪ Estilo circular
+                heatmapG.append("circle")
+                    .attr("cx", j * cellSize + cellSize / 2)
+                    .attr("cy", i * cellSize + cellSize / 2)
+                    .attr("r", (cellSize / 2) * value) // radio proporcional al índice
+                    .attr("fill", colorScale(value))
+                    .on("mouseover", function (event) {
+                        heatmapTooltip.style("display", "block")
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px")
+                            .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                                   <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
+                    })
+                    .on("mouseout", function () {
+                        heatmapTooltip.style("display", "none");
+                    });
+            }
+
+            if (showValues) {
+                heatmapG.append("text")
+                    .attr("x", j * cellSize + cellSize / 2)
+                    .attr("y", i * cellSize + cellSize / 2 + 4)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "10px")
+                    .attr("fill", "black")
+                    .text(value.toFixed(2));
+            }
         });
     });
 
-    // Labels
+    // Etiquetas
     heatmapG.selectAll(".row-label")
         .data(proteinIds)
         .enter().append("text")
@@ -503,16 +585,22 @@ function drawHeatmap() {
         .attr("x", (d, i) => i * cellSize + cellSize / 2)
         .attr("y", -5)
         .attr("text-anchor", "start")
-        .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize/2}, -5)`)
+        .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
         .text(d => d);
 
-    // LEGEND
+    // Leyenda
+    
+
     const legendWidth = 200, legendHeight = 20;
     const legendX = (proteinIds.length * cellSize - legendWidth) / 2;
+    heatmapSvg.select("#color-legend").remove();
     const legend = heatmapSvg.append("g")
         .attr("id", "color-legend")
         .attr("transform", `translate(${heatmapMargin.left + legendX},${heatmapMargin.top + proteinIds.length * cellSize + 40})`);
 
+    const showLegend = document.getElementById("toggle-legend")?.checked ?? true;
+    legend.style("display", showLegend ? "block" : "none");
+    
     legend.append("rect")
         .attr("width", legendWidth)
         .attr("height", legendHeight)
@@ -530,12 +618,15 @@ function drawHeatmap() {
         .attr("x", 0)
         .attr("y", legendHeight + 15)
         .text("0.0");
+
     legend.append("text")
         .attr("x", legendWidth)
         .attr("y", legendHeight + 15)
         .attr("text-anchor", "end")
         .text("1.0");
 }
+
+
 
 document.getElementById("min-color").addEventListener("input", function() {
     minColor = this.value;
@@ -550,6 +641,11 @@ document.getElementById("max-color").addEventListener("input", function() {
     updateLegendGradient();
     drawHeatmap();
 });
+
+document.getElementById("show-values").addEventListener("change", drawHeatmap);
+document.getElementById("upper-triangle-only").addEventListener("change", drawHeatmap);
+document.getElementById("heatmap-style").addEventListener("change", drawHeatmap);
+document.getElementById("toggle-legend").addEventListener("change", drawHeatmap);
 
 drawHeatmap();
 </script>
@@ -834,19 +930,6 @@ document.getElementById("download-heatmap").addEventListener("click", function()
     });
 </script>
 
-<!-- VARIABLES + RENDER JACCARD -->
-<script>
-    const proteinIds = Object.keys(sequences);
-    const rawJaccard = JSON.parse('{{ jaccard_indices | tojson | safe }}');
-    const jaccardIndices = {};
-
-    Object.entries(rawJaccard).forEach(([key, value]) => {
-        const [a, b] = key.split(', ').map(s => s.replace(/['"()]/g, ''));
-        jaccardIndices[`${a}-${b}`] = value;
-        jaccardIndices[`${b}-${a}`] = value;
-    });
-    proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
-</script>
 
 <script>
     function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'curved', width = 900, height = 600) {

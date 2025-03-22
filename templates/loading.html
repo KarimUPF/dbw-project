@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Loading Analysis...{% endblock %}
+
+{% block content %}
+<style>
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 80vh;
+        font-family: 'Georgia';
+        text-align: center;
+    }
+
+    .loading-bar {
+        width: 300px;
+        height: 10px;
+        background-color: #eee;
+        border-radius: 5px;
+        margin-top: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .loading-fill {
+        height: 100%;
+        width: 0;
+        background-color: #4A90E2;
+        transition: width 0.5s ease-in-out;
+    }
+
+    .loading-text {
+        margin-top: 30px;
+        font-size: 18px;
+        color: #555;
+    }
+</style>
+
+<div class="loading-container">
+    <h1 style="color: #333;">Running Comparative PTM Analysis...</h1>
+    <div class="loading-bar">
+        <div class="loading-fill" id="loading-fill"></div>
+    </div>
+    <div class="loading-text" id="loading-message">Starting...</div>
+</div>
+
+<script>
+    const messages = [
+        "🔍 Running BLAST to find similar proteins...",
+        "🔗 Aligning sequences with Clustal Omega...",
+        "🧪 Extracting PTMs from the database...",
+        "📊 Calculating Jaccard similarity...",
+        "🌳 Building phylogenetic tree...",
+        "🎯 Finalizing visualization..."
+    ];
+
+    const messageDiv = document.getElementById("loading-message");
+    const progressBar = document.getElementById("loading-fill");
+
+    let index = 0;
+    const totalSteps = messages.length;
+
+    function updateProgress() {
+        if (index < totalSteps) {
+            messageDiv.textContent = messages[index];
+            const progress = ((index + 1) / totalSteps) * 100;
+            progressBar.style.width = progress + "%";
+            index++;
+            setTimeout(updateProgress, 2000);
+        } else {
+            launchAnalysis();
+        }
+    }
+
+    function launchAnalysis() {
+        fetch('/compare_async', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+        })
+        .catch(error => {
+            messageDiv.textContent = "❌ An error occurred while loading results.";
+            console.error("Error:", error);
+        });
+    }
+
+    updateProgress();
+</script>
+{% endblock %}

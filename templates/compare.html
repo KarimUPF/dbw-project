@@ -7,8 +7,7 @@
 <div class="background">
     <body>
     <h1 style="margin-top: 100px;margin-bottom: 20px;">Compare PTMs</h1>
-    <form id="compare-form" method="POST" action="/compare_ptms" style="margin-bottom: 50px;">
-        <label for="protein_id">Protein ID(s) (comma-separated):</label>
+    <form id="compare-form" method="POST" action="/loading" style="margin-bottom: 50px;" onsubmit="return showLoading();">        <label for="protein_id">Protein ID(s) (comma-separated):</label>
         <input type="text" name="protein_id" id="protein-id" placeholder="C9JLW8, A0JNW5, A1A519" required>
         <small id="protein-warning" style="color: red; display: none;">Maximum 10 protein IDs allowed.</small>
         <br>
@@ -269,37 +268,13 @@
         });
     </script>
 
+
 <script>
-    document.getElementById("compare-form").addEventListener("submit", function (e) {
-        const progressDiv = document.getElementById("progress-messages");
-
-        // Clear previous messages
-        progressDiv.innerHTML = "";
-
-        // Show initial status message
-        const steps = [
-            "Running BLAST search...",
-            "Aligning sequences...",
-            "Calculating Jaccard similarity...",
-            "Generating phylogenetic tree...",
-            "Rendering visualization..."
-        ];
-
-        let index = 0;
-
-        function showNextStep() {
-            if (index < steps.length) {
-                progressDiv.innerHTML += `<p>${steps[index]}</p>`;
-                index++;
-                setTimeout(showNextStep, 500); // Simulate progress with delay (optional)
-            }
-        }
-
-        showNextStep();
-
-        // Continue with form submission
-    });
-</script>
-
+    function showLoading() {
+        // Opcional: podrías mostrar una animación o mensaje aquí
+        return true; // deja que el formulario se envíe normalmente
+    }
+    </script>
+    
 </body>
 {% endblock %}

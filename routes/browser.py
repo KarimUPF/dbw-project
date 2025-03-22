@@ -17,6 +17,8 @@ from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstruct
 from Bio import Phylo
 from flask import jsonify
 import json
+from flask import current_app
+from flask_login import login_required
 
 ptm_comparator = Blueprint('ptm_comparator', __name__)
 
@@ -434,3 +436,21 @@ def tree_view(query_id):
 
     return render_template("tree_viewer.html", nwk_file=nwk_filename)
 
+@ptm_comparator.route('/loading', methods=['POST'])
+def show_loading_screen():
+    """Renderiza la pantalla de carga y guarda los datos del formulario en la sesión."""
+    form_data = request.form.to_dict()
+    session['compare_form_data'] = form_data
+    return render_template('loading.html')
+
+
+@ptm_comparator.route('/compare_async', methods=['POST'])
+@login_required
+def compare_async():
+    form_data = session.get('compare_form_data')
+    if not form_data:
+        return jsonify({'error': 'No form data found'}), 400
+
+    from flask import current_app
+    with current_app.test_request_context(method='POST', data=form_data):
+        return align_and_update_ptms()

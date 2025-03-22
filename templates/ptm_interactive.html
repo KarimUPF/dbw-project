@@ -67,78 +67,75 @@
     <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
 <div style="padding: 40px; margin: 0 60px;">
     <h1 style="text-align: center; margin-bottom: 40px;">Jaccard Similarity Heatmap</h1>
-
-    <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
   
-    <!-- Heatmap Jaccard -->
-    <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
-        <svg id="heatmap" width="600" height="600"></svg>
-        <div class="heatmap-tooltip"></div>
-    
-    </div>
+    <!-- Contenedor en columna para heatmap, controles y botones -->
+    <div style="display: flex; flex-direction: column; align-items: stretch; gap: 30px;">
   
-      <!-- Controles del Heatmap -->
-    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-        <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
+      <!-- Heatmap + controles en fila -->
+      <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
+        
+        <!-- Heatmap -->
+        <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
+          <svg id="heatmap" width="600" height="600"></svg>
+          <div class="heatmap-tooltip"></div>
+        </div>
+  
+        <!-- Controles -->
+        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+          
+          <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
             <label for="min-color">Min Color:</label>
             <input type="color" id="min-color" value="#ffffcc">
             <label for="max-color">Max Color:</label>
             <input type="color" id="max-color" value="#800026">
-        </div>
-
-        <!-- Nuevo selector de estilo de heatmap -->
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">            <label for="heatmap-style">Heatmap style:</label>
+          </div>
+  
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
+            <label for="heatmap-style">Heatmap style:</label>
             <select id="heatmap-style">
-            <option value="square" selected>Square</option>
-            <option value="circle">Circle</option>
+              <option value="square" selected>Square</option>
+              <option value="circle">Circle</option>
             </select>
-        </div>
+          </div>
   
-        
-        <!-- Contenedor común con flex-column alineada a la izquierda -->
-        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
-    
+          <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
             <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-                <input type="checkbox" id="show-values" checked>
-                <span>Show Jaccard values</span>
+              <input type="checkbox" id="show-values" checked>
+              <span>Show Jaccard values</span>
             </label>
-        
+          
             <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-                <input type="checkbox" id="upper-triangle-only">
-                <span>Show only upper triangle</span>
+              <input type="checkbox" id="upper-triangle-only">
+              <span>Show only upper triangle</span>
             </label>
-
-            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-                <input type="checkbox" id="toggle-legend" checked>
-                <span>Show color legend</span>
-              </label>
-              
-        
-            </div>
-        
-
-        
-    </div>
-
-    <!-- CONTENEDOR FLEX PARA ALINEAR BOTONES -->
-    <div style="display: flex; justify-content: space-between; width: 100%;">
-
-        <!-- Columna izquierda: botón PNG -->
-        <div style="flex: 1; display: flex; justify-content: center;">
-        <a id="download-heatmap" class="btn btn-primary">Download Heatmap (PNG)</a>
-        </div>
-    
-        <!-- Columna derecha: botón CSV -->
-        <div style="flex: 1; display: flex; justify-content: center;">
-        <a id="download-csv" class="btn btn-primary">Download Table (CSV)</a>
-        </div>
-    
-    </div>
   
+            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+              <input type="checkbox" id="toggle-legend" checked>
+              <span>Show color legend</span>
+            </label>
+          </div>
+  
+        </div>
+      </div>
+  
+      <!-- Botones alineados -->
+      <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px; gap: 60px;">
 
+        <!-- Botón debajo del heatmap -->
+        <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
+          <a id="download-heatmap" class="btn btn-primary" style="width: 800px; text-align: center;">Download Heatmap (PNG)</a>
+        </div>
+      
+        <!-- Botón debajo de los controles -->
+        <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
+          <a id="download-csv" class="btn btn-primary" style="width: 800px; text-align: center;">Download Table (CSV)</a>
+        </div>
+      
+      </div>
   
     </div>
   </div>
+  
   
 
     <script>

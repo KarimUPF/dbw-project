@@ -2,40 +2,6 @@
 {% block title %}Loading Analysis...{% endblock %}
 
 {% block content %}
-<style>
-    .loading-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 80vh;
-        font-family: 'Georgia';
-        text-align: center;
-    }
-
-    .loading-bar {
-        width: 300px;
-        height: 10px;
-        background-color: #eee;
-        border-radius: 5px;
-        margin-top: 20px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .loading-fill {
-        height: 100%;
-        width: 0;
-        background-color: #4A90E2;
-        transition: width 2s ease-in-out;
-    }
-
-    .loading-text {
-        margin-top: 30px;
-        font-size: 18px;
-        color: #555;
-    }
-</style>
 
 <div class="loading-container">
     <h1 style="color: #333;">Running Comparative PTM Analysis...</h1>

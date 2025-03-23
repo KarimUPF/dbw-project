@@ -5,46 +5,10 @@
 {% block content %}
 <head> 
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <style>
-        .ptm-tooltip {
-            position: absolute;
-            background: white;
-            border: 1px solid black;
-            padding: 8px;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        
-        .heatmap-tooltip {
-            position: absolute;
-            background: white;
-            border: 1px solid black;
-            padding: 8px;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        
-        .ptm-tooltip-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 3px;
-        }
-        
-        .ptm-tooltip-content {
-            line-height: 1.4;
-        }
-    </style>
 </head>
 
 <body>
-    <h1 style="margin-top: 100px; margin-bottom: 30px;">Post-Translational Modifications Viewer</h1>
+    <h1 style="margin-top: 100px;">Post-Translational Modifications Viewer</h1>
     <div style="padding: 40px; margin: 0 60px;">
         <div style="overflow-x: auto; border: 1px solid #ccc; width: 100%;">
             <svg width="100%" height="500"></svg>
@@ -53,19 +17,22 @@
     
     <div class="ptm-tooltip"></div>
 
-    <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
-        background:white; border:1px solid #ccc; padding:20px; z-index:2000; border-radius:10px; max-width:500px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-        <span id="close-ptm-modal" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
-        <div id="ptm-modal-content"></div>
-    </div>
+        <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+            background:white; border:1px solid #ccc; padding:20px; z-index:2000; border-radius:10px; max-width:500px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <span id="close-ptm-modal" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
+            <div id="ptm-modal-content"></div>
+        </div>
 
 
-    <div style="margin: 40px auto; text-align: center;">
-        <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
+        <div style="margin: 40px auto; text-align: center;">
+            <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
+        </div>
     </div>
-    
-    <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
-<div style="padding: 40px; margin: 0 60px;">
+
+  
+<section class="PTM viewer" style="background-color: var(--turquesa);"></div>
+        <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
+<div  style="padding: 40px; margin: 0 60px;">
     <h1 style="text-align: center; margin-bottom: 40px;">Jaccard Similarity Heatmap</h1>
   
     <!-- Contenedor en columna para heatmap, controles y botones -->
@@ -74,71 +41,71 @@
       <!-- Heatmap + controles en fila -->
       <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
         
-        <!-- Heatmap -->
-        <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
-          <svg id="heatmap" width="600" height="600"></svg>
-          <div class="heatmap-tooltip"></div>
-        </div>
-  
-        <!-- Controles -->
-        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-          
-          <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
-            <label for="min-color">Min Color:</label>
-            <input type="color" id="min-color" value="#EED3C2 ">
-            <label for="max-color">Max Color:</label>
-            <input type="color" id="max-color" value="#C9244C">
-          </div>
-  
-          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
-            <label for="heatmap-style">Heatmap style:</label>
-            <select id="heatmap-style">
-              <option value="square" selected>Square</option>
-              <option value="circle">Circle</option>
-            </select>
-          </div>
-  
-          <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
-            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-              <input type="checkbox" id="show-values" checked>
-              <span>Show Jaccard values</span>
-            </label>
-          
-            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-              <input type="checkbox" id="upper-triangle-only">
-              <span>Show only upper triangle</span>
-            </label>
-  
-            <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
-              <input type="checkbox" id="toggle-legend" checked>
-              <span>Show color legend</span>
-            </label>
-          </div>
-  
-        </div>
+            <!-- Heatmap -->
+            <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
+            <svg id="heatmap" width="600" height="600"></svg>
+            <div class="heatmap-tooltip"></div>
+            </div>
+    
+            <!-- Controles -->
+            <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+            
+                <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
+                    <label for="min-color">Min Color:</label>
+                    <input type="color" id="min-color" value="#EED3C2 ">
+                    <label for="max-color">Max Color:</label>
+                    <input type="color" id="max-color" value="#C9244C">
+                </div>
+    
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
+                    <label for="heatmap-style">Heatmap style:</label>
+                    <select id="heatmap-style">
+                    <option value="square" selected>Square</option>
+                    <option value="circle">Circle</option>
+                    </select>
+                </div>
+    
+                <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <input type="checkbox" id="show-values" checked>
+                    <span>Show Jaccard values</span>
+                    </label>
+            
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <input type="checkbox" id="upper-triangle-only">
+                    <span>Show only upper triangle</span>
+                    </label>
+    
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <input type="checkbox" id="toggle-legend" checked>
+                    <span>Show color legend</span>
+                    </label>
+                </div>
+    
+            </div>
       </div>
   
       <!-- Botones alineados -->
-      <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px; gap: 60px;">
+        <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px; gap: 60px;">
 
-        <!-- Botón debajo del heatmap -->
-        <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
-          <a id="download-heatmap" class="btn btn-primary" style="width: 800px; text-align: center;">Download Heatmap (PNG)</a>
-        </div>
+            <!-- Botón debajo del heatmap -->
+            <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
+            <a id="download-heatmap" class="btn btn-primary" style="width: 300px; text-align: center;">Download Heatmap (PNG)</a>
+            </div>
       
-        <!-- Botón debajo de los controles -->
-        <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
-          <a id="download-csv" class="btn btn-primary" style="width: 800px; text-align: center;">Download Table (CSV)</a>
+            <!-- Botón debajo de los controles -->
+            <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
+            <a id="download-csv" class="btn btn-primary" style="width: 300px; text-align: center;">Download Table (CSV)</a>
+            </div>
         </div>
-      
-      </div>
   
     </div>
-  </div>
+</div>
+</section>
   
   
 
-    <script>
+<script>
 
 // Fetch PTM and sequence alignment data from Flask
 const sequences = JSON.parse('{{ sequences | tojson | safe }}');
@@ -714,83 +681,82 @@ document.getElementById("download-heatmap").addEventListener("click", function()
 </script>
 
 
-
-
-<div style="padding: 40px; margin: 0 60px;">
+<div  style="padding: 40px; margin: 0 60px;">
     <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
   
-    <!-- Árbol filogenético clásico -->
-    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-        <h1 style="margin-bottom: 20px;">Phylogenetic Tree</h1>
+        <!-- Árbol filogenético clásico -->
+        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+            <h1 style="margin-bottom: 20px;">Phylogenetic Tree</h1>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">
-            <label for="tree-style">Tree style:</label>
-            <select id="tree-style">
-                <option value="rectangular">Rectangular</option>
-                <option value="radial">Radial</option>
-                <option value="circular">Circular</option>
-            </select>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">
+                <label for="tree-style">Tree style:</label>
+                <select id="tree-style">
+                    <option value="rectangular">Rectangular</option>
+                    <option value="radial">Radial</option>
+                    <option value="circular">Circular</option>
+                </select>
 
-            <label for="branch-style">Branch style:</label>
-            <select id="branch-style">
-                <option value="curve">Curved</option>
-                <option value="line">Straight</option>
-            </select>
+                <label for="branch-style">Branch style:</label>
+                <select id="branch-style">
+                    <option value="curve">Curved</option>
+                    <option value="line">Straight</option>
+                </select>
 
-            <label for="node-color">Node color:</label>
-            <input type="color" id="node-color" value="#4682B4">
+                <label for="node-color">Node color:</label>
+                <input type="color" id="node-color" value="#4682B4">
 
-            <label for="branch-color">Branch color:</label>
-            <input type="color" id="branch-color" value="#4A90E2">
+                <label for="branch-color">Branch color:</label>
+                <input type="color" id="branch-color" value="#4A90E2">
 
-            <label for="phylo-size">Tree size:</label>
-            <input type="range" id="phylo-size" min="400" max="2000" value="900">
+                <label for="phylo-size">Tree size:</label>
+                <input type="range" id="phylo-size" min="400" max="2000" value="900">
+            </div>
+
+            <div id="tree-container-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%;">
+                <div id="tree-container" style="min-width: 900px;"></div>
+            </div>      
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button id="download-tree" class="btn btn-primary">Download Phylogenetic Tree (PNG)</button>
+            </div>
         </div>
 
-        <div id="tree-container-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%;">
-            <div id="tree-container" style="min-width: 900px;"></div>
-        </div>      
+        <!-- Árbol basado en similitud de Jaccard -->
+        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+            <h1 style="margin-bottom: 20px;">Jaccard Similarity Tree</h1>
 
-        <div style="margin-top: 20px; text-align: center;">
-            <button id="download-tree" class="btn btn-primary">Download Phylogenetic Tree (PNG)</button>
-        </div>
-    </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+                <label for="jaccard-tree-style">Tree style:</label>
+                <select id="jaccard-tree-style">
+                    <option value="rectangular">Rectangular</option>
+                    <option value="radial">Radial</option>
+                    <option value="circular">Circular</option>
+                </select>
 
-    <!-- Árbol basado en similitud de Jaccard -->
-    <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-        <h1 style="margin-bottom: 20px;">Jaccard Similarity Tree</h1>
+                <label for="jaccard-line-type">Branch style:</label>
+                <select id="jaccard-line-type">
+                    <option value="curved">Curved</option>
+                    <option value="straight">Straight</option>
+                </select>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-            <label for="jaccard-tree-style">Tree style:</label>
-            <select id="jaccard-tree-style">
-                <option value="rectangular">Rectangular</option>
-                <option value="radial">Radial</option>
-                <option value="circular">Circular</option>
-            </select>
+                <label for="jaccard-node-color">Node color:</label>
+                <input type="color" id="jaccard-node-color" value="#4682B4">
 
-            <label for="jaccard-line-type">Branch style:</label>
-            <select id="jaccard-line-type">
-                <option value="curved">Curved</option>
-                <option value="straight">Straight</option>
-            </select>
+                <label for="jaccard-link-color">Branch color:</label>
+                <input type="color" id="jaccard-link-color" value="#4A90E2">
 
-            <label for="jaccard-node-color">Node color:</label>
-            <input type="color" id="jaccard-node-color" value="#4682B4">
+                <label for="jaccard-size">Tree size:</label>
+                <input type="range" id="jaccard-size" min="400" max="2000" value="900">
+            </div>
 
-            <label for="jaccard-link-color">Branch color:</label>
-            <input type="color" id="jaccard-link-color" value="#4A90E2">
+            <div id="jaccard-tree-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%; margin-top: 15px;">
+                <svg id="jaccard-phylotree" width="900" height="600"></svg>
+            </div>
+                
 
-            <label for="jaccard-size">Tree size:</label>
-            <input type="range" id="jaccard-size" min="400" max="2000" value="900">
-        </div>
-
-        <div id="jaccard-tree-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%; margin-top: 15px;">
-            <svg id="jaccard-phylotree" width="900" height="600"></svg>
-        </div>
-             
-
-        <div style="margin-top: 20px; text-align: center;">
-            <button id="download-jaccard-png" class="btn btn-primary">Download Jaccard Similarity Tree (PNG)</button>
+            <div style="margin-top: 20px; text-align: center;">
+                <button id="download-jaccard-png" class="btn btn-primary">Download Jaccard Similarity Tree (PNG)</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1102,6 +1068,5 @@ document.getElementById("download-heatmap").addEventListener("click", function()
         img.src = url;
     });
     </script>
-
 </body>
 {% endblock %}

@@ -10,6 +10,40 @@ footer{
     background-color: var(--blanco);
 }
 
+/*Loading*/
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Georgia';
+    text-align: center;
+}
+
+.loading-bar {
+    width: 300px;
+    height: 10px;
+    background-color: #eee;
+    border-radius: 5px;
+    margin-top: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.loading-fill {
+    height: 100%;
+    width: 0;
+    background-color: #4A90E2;
+    transition: width 2s ease-in-out;
+}
+
+.loading-text {
+    margin-top: 30px;
+    font-size: 18px;
+    color: #555;
+}
+
 /*Flash warnings*/
 #flash-messages {
     position: fixed;
@@ -68,13 +102,42 @@ footer{
     background-color: #fff; /* Optional: Ensures background contrast */
 }
 
-.tooltip {
+.ptm-tooltip {
     position: absolute;
     background: white;
     border: 1px solid black;
-    padding: 5px;
+    padding: 8px;
     display: none;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    font-size: 14px;
 }
+
+.heatmap-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid black;
+    padding: 8px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.ptm-tooltip-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 3px;
+}
+
+.ptm-tooltip-content {
+    line-height: 1.4;
+}
+
+
 .ptm {
     stroke: black;
     stroke-width: 1px;

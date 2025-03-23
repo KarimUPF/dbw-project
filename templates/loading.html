@@ -27,7 +27,7 @@
         height: 100%;
         width: 0;
         background-color: #4A90E2;
-        transition: width 0.5s ease-in-out;
+        transition: width 2s ease-in-out;
     }
 
     .loading-text {
@@ -67,7 +67,7 @@
             const progress = ((index + 1) / totalSteps) * 100;
             progressBar.style.width = progress + "%";
             index++;
-            setTimeout(updateProgress, 2000);
+            setTimeout(updateProgress, 2500);
         } else {
             launchAnalysis();
         }

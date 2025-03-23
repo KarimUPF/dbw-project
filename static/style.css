@@ -257,6 +257,27 @@ body {
     justify-content: center;
 }
 
+.navbar-toggler {
+    position: absolute; /* lo sacamos del flujo para ubicarlo con precisión */
+    top: -10px;
+    right: 15px;
+    width: auto;
+    padding: 6px 10px;
+    background-color: transparent !important;
+    border: none;
+    box-shadow: none;
+    color: transparent; /* restauramos color para que se vea el ícono */
+    z-index: 1001; /* aseguramos que esté por encima del contenido */
+}
+
+
+.navbar-collapse {
+    right: 10px;
+    position: absolute;
+}
+
+
+
 
 html {
     scroll-behavior: smooth;
@@ -299,8 +320,9 @@ html {
 }
 
 .navbar-collapse.show {
-    width: 100vh;
-    background-color: var(--turquesa); /* Change to desired color */
+    background-color: var(--turquesa);
+    border-radius: 8px;
+    padding: 10px;
 }
 
 @media (max-width: 576px) {  
@@ -309,9 +331,22 @@ html {
         padding: 5px 10px;
     }
 
+    .navbar-collapse {
+        max-width: 50px; /* o el ancho que prefieras */
+        margin-left: auto;
+        background-color: var(--turquesa); /* para que el fondo siga siendo azul */
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        padding: 10px;
+      }
+
     .navbar-brand {
         font-size: 20px;
     }
+
+    .navbar .container {
+        position: relative;
+    }    
 
     .title-section {
         height: 60vh; /* Reduce height for smaller screens */
@@ -377,4 +412,32 @@ html {
 }
 
 
+@media (max-width: 992px) {
+    .navbar-collapse {
+        position: absolute;
+        top: 60px; /* justo debajo de la barra */
+        right: 10px;
+        width: 220px; /* o el ancho que prefieras */
+        max-width: 90vw;
+        background-color: var(--turquesa);
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+
+    .navbar-nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .navbar-nav .nav-item {
+        width: 100%;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 8px 16px;
+        width: 100%;
+        text-align: left;
+    }
+}
 

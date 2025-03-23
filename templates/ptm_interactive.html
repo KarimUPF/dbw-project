@@ -85,9 +85,9 @@
           
           <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
             <label for="min-color">Min Color:</label>
-            <input type="color" id="min-color" value="#ffffcc">
+            <input type="color" id="min-color" value="#EED3C2 ">
             <label for="max-color">Max Color:</label>
-            <input type="color" id="max-color" value="#800026">
+            <input type="color" id="max-color" value="#C9244C">
           </div>
   
           <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
@@ -471,7 +471,7 @@ const gradient = defs.append("linearGradient")
     .attr("x1", "0%").attr("x2", "100%")
     .attr("y1", "0%").attr("y2", "0%");
 gradient.selectAll("stop")
-    .data([{ offset: "0%", color: "#ffffcc" }, { offset: "100%", color: "#800026" }])
+    .data([{ offset: "0%", color: "#EED3C2" }, { offset: "100%", color: "#C9244C" }])
     .enter().append("stop")
     .attr("offset", d => d.offset)
     .attr("stop-color", d => d.color);
@@ -487,8 +487,8 @@ Object.entries(jaccard_indices).forEach(([key, value]) => {
 });
 proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
 
-let minColor = document.getElementById("min-color").value;
-let maxColor = document.getElementById("max-color").value;
+let minColor = document.getElementById("min-color").value="#EED3C2";
+let maxColor = document.getElementById("max-color").value="#C9244C";
 let colorScale = d3.scaleLinear().domain([0, 1]).range([minColor, maxColor]);
 
 function updateLegendGradient() {
@@ -557,7 +557,7 @@ function drawHeatmap() {
                     .attr("x", j * cellSize + cellSize / 2)
                     .attr("y", i * cellSize + cellSize / 2 + 4)
                     .attr("text-anchor", "middle")
-                    .attr("font-size", "10px")
+                    .attr("font-size", "14px")
                     .attr("fill", "black")
                     .text(value.toFixed(2));
             }
@@ -573,7 +573,11 @@ function drawHeatmap() {
         .attr("y", (d, i) => i * cellSize + cellSize / 2)
         .attr("text-anchor", "end")
         .attr("alignment-baseline", "middle")
+        .attr("font-size", "15px")
+        .attr("font-weight", "bold")
+        .style("font-family", "Georgia")
         .text(d => d);
+        
 
     heatmapG.selectAll(".col-label")
         .data(proteinIds)
@@ -583,6 +587,9 @@ function drawHeatmap() {
         .attr("y", -5)
         .attr("text-anchor", "start")
         .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
+        .attr("font-size", "15px")
+        .attr("font-weight", "bold")
+        .style("font-family", "Georgia")
         .text(d => d);
 
     // Leyenda
@@ -810,7 +817,7 @@ document.getElementById("download-heatmap").addEventListener("click", function()
 
         const g = svg.append("g")
             .attr("transform", style === "rectangular"
-                ? `translate(100, 50)`
+                ? `translate(20, 0)`
                 : `translate(${width / 2},${height / 2})`);
 
         const root = d3.hierarchy(treeData);
@@ -937,9 +944,10 @@ document.getElementById("download-heatmap").addEventListener("click", function()
         const margin = { top: 60, right: 150, bottom: 60, left: 150 };
         const treeWidth = width - margin.left - margin.right;
         const treeHeight = height - margin.top - margin.bottom;
-        const g = svg.append("g").attr("transform", style === "rectangular"
-        ? `translate(${margin.left},${margin.top})`
-        : `translate(${width / 2},${height / 2})`);
+        const g = svg.append("g")
+            .attr("transform", style === "rectangular"
+                ? `translate(80, 50)`
+                : `translate(${width / 2},${height / 2})`);;
 
 
         const distanceMatrix = [];

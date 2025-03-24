@@ -370,20 +370,6 @@ def generate_tree_html(tree_file, html_output=None):
     if html_output is None:
         html_output = os.path.join("results/trees/", os.path.basename(tree_file).replace(".nwk", ".html"))
 
-    try:
-        tree = Tree(tree_file, format=1)  # Forzar lectura con nombres internos
-        ts = TreeStyle()
-        ts.show_leaf_name = True
-        ts.scale = 20
-        ts.title.add_face(TextFace("Árbol filogenético basado en distancias de alineamiento", fsize=12), column=0)
-
-        tree.render(html_output, tree_style=ts)
-        print(f"✅ Árbol convertido a HTML: {html_output}")
-    except Exception as e:
-        print(f"❌ Error al generar HTML: {e}")
-        return None
-
-    return html_output
 
 
 @ptm_comparator.route('/get_tree_json/<query_id>')
@@ -441,18 +427,17 @@ def show_loading_screen():
     form_data = request.form.to_dict()
     session['compare_form_data'] = form_data
 
-    # Extraer info básica para validar
-    protein_id = form_data.get("protein_id", "").strip()
+    protein_ids = form_data.get("protein_id", "").split(",")
+    protein_ids = [pid.strip() for pid in protein_ids if pid.strip()]
     selected_organisms = form_data.get("organism", "").split(',')
     selected_organisms = [org for org in selected_organisms if org]
 
     session_db = db.session
 
-    # Verificar si hay proteínas válidas
-    if protein_id:
-        protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
-        if not protein:
-            return render_template("no_results.html", message="Protein not found.")
+    if protein_ids:
+        proteins = session_db.query(Protein).filter(Protein.accession_id.in_(protein_ids)).all()
+        if not proteins:
+            return render_template("no_results.html", message="None of the selected proteins were found.")
 
         organism_ids = []
         if selected_organisms:
@@ -470,6 +455,7 @@ def show_loading_screen():
             return render_template("no_results.html", message="No proteins found for selected organism(s).")
 
     return render_template('loading.html')
+
 
 
 

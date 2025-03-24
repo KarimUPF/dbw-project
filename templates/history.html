@@ -58,16 +58,16 @@
                             </p>
                             <p><strong>Window size:</strong> {{ query.parameters['window_size'] }}</p>
 
-                            <a href="{{ url_for('ptm_comparator.align_and_update_ptms', 
-                                    protein_id=','.join(query.parameters['protein_ids']),
-                                    ptm_type=','.join(query.parameters['ptm_types'] or []),
-                                    organism=','.join(query.parameters['organism_filter'] or []),
-                                    window=query.parameters['window_size']
-                                ) }}">
+                            <form method="POST" action="{{ url_for('ptm_comparator.show_loading_screen') }}">
+                                <input type="hidden" name="protein_id" value="{{ query.parameters['protein_ids'] | join(',') }}">
+                                <input type="hidden" name="ptm_type" value="{{ query.parameters['ptm_types'] | join(',') if query.parameters['ptm_types'] }}">
+                                <input type="hidden" name="organism" value="{{ query.parameters['organism_filter'] | join(',') if query.parameters['organism_filter'] }}">
+                                <input type="hidden" name="window" value="{{ query.parameters['window_size'] }}">
                                 <button style="background-color: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                                     Re-Run
                                 </button>
-                            </a>
+                            </form>
+                            
                         </li>
                     {% endfor %}
                 {% else %}

@@ -438,10 +438,39 @@ def tree_view(query_id):
 
 @ptm_comparator.route('/loading', methods=['POST'])
 def show_loading_screen():
-    """Renderiza la pantalla de carga y guarda los datos del formulario en la sesión."""
     form_data = request.form.to_dict()
     session['compare_form_data'] = form_data
+
+    # Extraer info básica para validar
+    protein_id = form_data.get("protein_id", "").strip()
+    selected_organisms = form_data.get("organism", "").split(',')
+    selected_organisms = [org for org in selected_organisms if org]
+
+    session_db = db.session
+
+    # Verificar si hay proteínas válidas
+    if protein_id:
+        protein = session_db.query(Protein).filter_by(accession_id=protein_id).first()
+        if not protein:
+            return render_template("no_results.html", message="Protein not found.")
+
+        organism_ids = []
+        if selected_organisms:
+            organism_ids = session_db.query(Organism.id).filter(
+                Organism.scientific_name.in_(selected_organisms)
+            ).all()
+            organism_ids = [oid[0] for oid in organism_ids]
+
+        query = session_db.query(Protein)
+        if organism_ids:
+            query = query.filter(Protein.organism_id.in_(organism_ids))
+
+        total_proteins = query.count()
+        if total_proteins == 0:
+            return render_template("no_results.html", message="No proteins found for selected organism(s).")
+
     return render_template('loading.html')
+
 
 
 @ptm_comparator.route('/compare_async', methods=['POST'])

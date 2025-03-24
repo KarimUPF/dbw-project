@@ -65,7 +65,7 @@
                     </select>
                 </div>
     
-                <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-family: Georgia; font-size: 14px;">
+                <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
                     <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
                     <input type="checkbox" id="show-values" checked>
                     <span>Show Jaccard values</span>
@@ -136,7 +136,8 @@ svg.selectAll(".protein-label")
     .attr("x", margin.left - 10)
     .attr("y", d => yScale(d))
     .attr("text-anchor", "end")
-    .attr("font-family", "Georgia") 
+    .attr("font-weight", "bold")
+    .attr("fill", "#5f585a")
     .text(d => d);
 
 // Define color scheme for amino acids (AA)
@@ -160,7 +161,7 @@ Object.entries(sequences).forEach(([proteinId, sequence]) => {
         .attr("y", yScale(proteinId) )
         .attr("text-anchor", "middle")
         .text(d => d)
-        .attr("font-family", "monospace")
+        .attr("font-family", "Courier")
         .attr("font-weight", "bold") 
         .attr("fill", d => aminoAcidColors[d] || "black"); // Gaps in gray
 });
@@ -196,21 +197,7 @@ ptmTypes.forEach(type => {
 // Fallback color
 ptmColors["Other"] = "#444";
 
-// Define different shapes for PTMs
-const ptmShapes = {
-    "phospho": d3.symbolCircle,  
-    "n-acetyl": d3.symbolCross,   
-    "sulfo": d3.symbolTriangle,  
-    "diiodo": d3.symbolDiamond,       
-    "omega-n-methyl": d3.symbolWye,   
-    "n5-methyl": d3.symbolX,     
-    "n6-acetyl": d3.symbolStar, 
-    "default": d3.symbolSquare   
-};
-
-// Define symbol generator
-const symbolGenerator = d3.symbol()
-    .size(200); // Adjust symbol size if necessary
+const arrowPath = "M0 0-4-4-4-13 0-9 4-13 4-4 0 0";
 
 const ptmTooltip = d3.select(".ptm-tooltip");
 // Adjust PTM positions based on alignment gaps
@@ -230,35 +217,36 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
     });
 
  // Draw PTM markers at the correct positions (above the sequence)
- svg.selectAll(`.ptm-${proteinId}`)
+svg.selectAll(`.ptm-${proteinId}`)
     .data(Object.entries(ptms))
-    .enter().append("path") // Instead of circle, use path for different shapes
+    .enter().append("path")
     .attr("class", "ptm")
-    .attr("d", d => symbolGenerator.type(ptmShapes[d[1].type] || ptmShapes["default"])()) // Choose shape
-    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 25})`) // Adjust position
+    .attr("d", arrowPath)
+    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 25})`)
     .attr("fill", d => ptmColors[d[1].type] || "black")
+    .attr("stroke", "none")
+    .attr("stroke-width", "0px")
     .on("mouseover", function(event, d) {
-    const ptmType = d[1].type;
-
-    ptmTooltip.style("display", "block")
-        .style("left", (event.pageX + 10) + "px")
-        .style("top", (event.pageY - 10) + "px")
-        .html(`
-            <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
-            <div class="ptm-tooltip-content">
-                <strong>Type:</strong> <span class="ptm-info-link" style="color:blue; text-decoration:underline; cursor:pointer;" data-ptm="${ptmType}">${ptmType}</span><br>                <strong>Original Position:</strong> ${d[1].original_position}<br>
-                <strong>New Position:</strong> ${d[1].new_position}
-            </div>
-        `);
-})
-.on("mouseout", function() {
-    // Retrasar la ocultación para permitir que el usuario mueva el cursor al tooltip
-    setTimeout(() => {
-        if (!ptmTooltip.node().matches(':hover')) {
-            ptmTooltip.style("display", "none");
-        }
-    }, 200);
-});
+        const ptmType = d[1].type;
+        ptmTooltip.style("display", "block")
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 10) + "px")
+            .html(`
+                <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
+                <div class="ptm-tooltip-content">
+                    <strong>Type:</strong> <span class="ptm-info-link" style="color:blue; text-decoration:underline; cursor:pointer;" data-ptm="${ptmType}">${ptmType}</span><br>
+                    <strong>Original Position:</strong> ${d[1].original_position}<br>
+                    <strong>New Position:</strong> ${d[1].new_position}
+                </div>
+            `);
+    })
+    .on("mouseout", function() {
+        setTimeout(() => {
+            if (!ptmTooltip.node().matches(':hover')) {
+                ptmTooltip.style("display", "none");
+            }
+        }, 200);
+    });
 
 
 // Evitar que el tooltip desaparezca si el cursor está sobre él
@@ -470,8 +458,8 @@ function updateLegendGradient() {
 }
 function drawHeatmap() {
     heatmapG.selectAll("*").remove();
-
-    const showValues = document.getElementById("show-values").checked;
+    
+    const fontSizeScale = Math.max(16, Math.min(18, 600 / proteinIds.length));    const showValues = document.getElementById("show-values").checked;
     const upperOnly = document.getElementById("upper-triangle-only").checked;
     const heatmapStyle = document.getElementById("heatmap-style").value; // 👈 nuevo
 
@@ -532,32 +520,48 @@ function drawHeatmap() {
     });
 
     // Etiquetas
+
+   // Eliminar etiquetas anteriores
+    heatmapG.selectAll(".row-label").remove();
+
+    // Crear nuevas etiquetas con el fontSize actualizado
     heatmapG.selectAll(".row-label")
         .data(proteinIds)
         .enter().append("text")
-        .attr("class", "heatmap-label")
-        .attr("x", -5)
+        .attr("class", "row-label")
+        .attr("x", d => upperOnly ? proteinIds.length * cellSize + 5 : -5)
         .attr("y", (d, i) => i * cellSize + cellSize / 2)
-        .attr("text-anchor", "end")
+        .attr("text-anchor", d => upperOnly ? "start" : "end")
         .attr("alignment-baseline", "middle")
-        .attr("font-size", "15px")
         .attr("font-weight", "bold")
-        .style("font-family", "Georgia")
+        .attr("fill", "#5f585a")
+        .attr("font-size", fontSizeScale + "px")  // ✅ Aquí se aplica el tamaño
         .text(d => d);
-        
 
-    heatmapG.selectAll(".col-label")
-        .data(proteinIds)
-        .enter().append("text")
-        .attr("class", "heatmap-label")
-        .attr("x", (d, i) => i * cellSize + cellSize / 2)
-        .attr("y", -5)
-        .attr("text-anchor", "start")
-        .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
-        .attr("font-size", "15px")
-        .attr("font-weight", "bold")
-        .style("font-family", "Georgia")
-        .text(d => d);
+
+
+            
+
+        // Eliminar etiquetas anteriores
+        heatmapG.selectAll(".col-label").remove();
+
+        // Crear nuevas etiquetas con el fontSize actualizado
+        heatmapG.selectAll(".col-label")
+            .data(proteinIds)
+            .enter().append("text")
+            .attr("class", "col-label")
+            .attr("x", (d, i) => i * cellSize + cellSize / 2)
+            .attr("y", -5)
+            .attr("text-anchor", "start")
+            .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
+            .attr("font-weight", "bold")
+            .attr("fill", "#5f585a")
+            .attr("font-size", fontSizeScale + "px")  // ✅ APLICADO AQUÍ CORRECTAMENTE
+            .text(d => d);
+
+
+  
+
 
     // Leyenda
     
@@ -582,8 +586,8 @@ function drawHeatmap() {
         .attr("x", 0)
         .attr("y", -5)
         .text("Jaccard Index")
-        .style("font-size", "12px")
-        .style("font-weight", "bold");
+        .attr("font-weight", "bold")
+        .attr("fill", "#5f585a")
 
     legend.append("text")
         .attr("x", 0)
@@ -843,7 +847,7 @@ document.getElementById("download-heatmap").addEventListener("click", function()
             .attr("x", 12)
             .attr("dy", ".35em")
             .style("font-size", "13px")
-            .style("font-family", "Georgia")
+            .style("font-family", "Courier")
             .text(d => d.data.name.includes("Inner") ? "" : d.data.name);
     }
 
@@ -1018,7 +1022,7 @@ document.getElementById("download-heatmap").addEventListener("click", function()
             .attr("x", 10)
             .attr("dy", "0.31em")
             .style("font-size", "13px")
-            .style("font-family", "Georgia") 
+            .style("font-family", "Courier") 
             .text(d => d.data.name);
     }
 

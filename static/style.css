@@ -10,6 +10,42 @@ footer{
     background-color: var(--blanco);
 }
 
+.control-group {
+    width: 100%;
+    max-width: 400px;
+}
+
+.control-label {
+    font-weight: bold;
+    font-family: monospace;
+    margin-bottom: 4px;
+}
+
+.control-element {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
 /*Loading*/
 .loading-container {
     display: flex;
@@ -168,7 +204,11 @@ form {
     background: none;
     padding: 10px;
     border-radius: 10px;
+<<<<<<< Updated upstream
     /*box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1)*/
+=======
+    /*box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);*/
+>>>>>>> Stashed changes
     max-width: 500px;
     margin: auto;
 }

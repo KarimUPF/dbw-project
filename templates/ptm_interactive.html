@@ -52,9 +52,9 @@
             
                 <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
                     <label for="min-color">Min Color:</label>
-                    <input type="color" id="min-color" value="#EED3C2 ">
+                    <input type="color" id="min-color" value="#f8f7f7 ">
                     <label for="max-color">Max Color:</label>
-                    <input type="color" id="max-color" value="#C9244C">
+                    <input type="color" id="max-color" value="#3d189d">
                 </div>
     
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
@@ -197,9 +197,36 @@ ptmTypes.forEach(type => {
 // Fallback color
 ptmColors["Other"] = "#444";
 
-const arrowPath = "M0 0-4-4-4-13 0-9 4-13 4-4 0 0";
+const arrowPath = "M0 0-5.2-5.2-5.2-16.9 0-11.7 5.2-16.9 5.2-5.2 0 0";
+
+const animationDistance = 5; // Distance to move up and down
+const animationDuration = 800; // Duration of the animation in milliseconds
+
 
 const ptmTooltip = d3.select(".ptm-tooltip");
+
+const bounce = (selection, d, yBase) => {
+    const x = margin.left + (d[1].new_position / maxSeqLength) * width;
+
+    selection.transition()
+        .duration(animationDuration)
+        .ease(d3.easeSinInOut)
+        .attr("transform", `translate(${x}, ${yBase + animationDistance})`)
+        .transition()
+        .duration(animationDuration)
+        .ease(d3.easeSinInOut)
+        .attr("transform", `translate(${x}, ${yBase - animationDistance})`)
+        .transition()
+        .duration(animationDuration)
+        .ease(d3.easeSinInOut)
+        .attr("transform", `translate(${x}, ${yBase})`)
+        .on("end", () => {
+            setTimeout(() => bounce(selection, d, yBase), 10); // pequeño delay opcional
+        });
+};
+
+
+
 // Adjust PTM positions based on alignment gaps
 Object.entries(ptmData).forEach(([proteinId, ptms]) => {
     if (!ptms || Object.keys(ptms).length === 0) return;
@@ -217,12 +244,12 @@ Object.entries(ptmData).forEach(([proteinId, ptms]) => {
     });
 
  // Draw PTM markers at the correct positions (above the sequence)
-svg.selectAll(`.ptm-${proteinId}`)
+ const ptmArrows = svg.selectAll(`.ptm-${proteinId}`)
     .data(Object.entries(ptms))
     .enter().append("path")
     .attr("class", "ptm")
     .attr("d", arrowPath)
-    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 25})`)
+    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 20})`)
     .attr("fill", d => ptmColors[d[1].type] || "black")
     .attr("stroke", "none")
     .attr("stroke-width", "0px")
@@ -247,6 +274,13 @@ svg.selectAll(`.ptm-${proteinId}`)
             }
         }, 200);
     });
+
+// Llama a bounce para cada flecha
+ptmArrows.each(function(d) {
+    const yBase = yScale(proteinId) - 20;  // usa mismo offset que en .attr("transform")
+    bounce(d3.select(this), d, yBase);
+});
+
 
 
 // Evitar que el tooltip desaparezca si el cursor está sobre él
@@ -426,7 +460,7 @@ const gradient = defs.append("linearGradient")
     .attr("x1", "0%").attr("x2", "100%")
     .attr("y1", "0%").attr("y2", "0%");
 gradient.selectAll("stop")
-    .data([{ offset: "0%", color: "#EED3C2" }, { offset: "100%", color: "#C9244C" }])
+    .data([{ offset: "0%", color: "#f8f7f7" }, { offset: "100%", color: "#3d189d" }])
     .enter().append("stop")
     .attr("offset", d => d.offset)
     .attr("stop-color", d => d.color);
@@ -442,8 +476,8 @@ Object.entries(jaccard_indices).forEach(([key, value]) => {
 });
 proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
 
-let minColor = document.getElementById("min-color").value="#EED3C2";
-let maxColor = document.getElementById("max-color").value="#C9244C";
+let minColor = document.getElementById("min-color").value="#f8f7f7";
+let maxColor = document.getElementById("max-color").value="#3d189d";
 let colorScale = d3.scaleLinear().domain([0, 1]).range([minColor, maxColor]);
 
 function updateLegendGradient() {

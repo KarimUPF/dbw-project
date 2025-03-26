@@ -68,6 +68,7 @@
     </div>
 </section>
 
+{% if not current_user.is_authenticated %}
 <!-- LOGIN AND SIGNUP SECTION -->
 <section id="signup"></section>
 <section id="login" class="login py-3">
@@ -120,7 +121,7 @@
         </div>
     </div>
 </section>
-
+{% endif %}
 
 <section class="Team py-5">
     <div class="container">

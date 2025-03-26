@@ -96,9 +96,9 @@
         </div>
 
         <!-- Signup Form (initially hidden) -->
-        <div class="card shadow-lg p-4 rounded-3" id="signup-form" style="width: 600px; display: none;">
+        <div class="card shadow-lg p-4 rounded-3" id="signup-form" style="width: 70%; display: none;">
             <h2 class="text-center mb-4">Sign Up</h2>
-            <form method="POST" action="{{ url_for('auth.signup') }}" style="width: 600px;">
+            <form method="POST" action="{{ url_for('auth.signup') }}">
                 {{ signup_form.hidden_tag() }}
                 <div class="mb-3">
                     {{ signup_form.username.label(class="form-label") }}

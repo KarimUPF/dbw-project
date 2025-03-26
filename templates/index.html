@@ -15,46 +15,62 @@
     </div>
     <div class="container d-flex flex-column justify-content-center align-items-center vh-100 text-center">
         <h1 class="display-4 text-white">Welcome to PTM Nexus!</h1>
-        <p class="lead text-white">This is a basic Flask template project.</p>
+        <p class="lead text-white">The First Tool for Post-translational Modifications Analysis</p>
         <a href="#login" class="btn btn-primary mt-3">Get Started</a>  <!-- Scrolls to login -->
     </div>
 </section>
 
-<section class="Information">
+<section class="Information py-5">
     <div class="container">
-        <h2 class="display-4 text-white mb-5">What is PTM-nexus?</h2>
+        <h2 class="display-4 text-white text-center mb-5">What is PTM-nexus?</h2>
 
-        <div class="row">
-            <div class="col-md-4 d-flex flex-column align-items-center">
-            <h3>Objective</h3>
-            <p>
-                PTM-nexus aims to provide a previously non-existent service, a tool to analyse the similarity on post-translational modifications between proteins.
-                To do so this application gives the user the chance to input one or a batch of proteins, and performs a series of calculations to give the top 10 most similar proteins.
-            </p>
-            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1 pe-4">
+                            <h3 class="card-title mb-3">Objective</h3>
+                            <p class="card-text">
+                                Post-translational modifications (PTMs) constitute covalent chemical modifications occurring on proteins subsequent to ribosomal synthesis, critically influencing their functional repertoire, structural integrity, subcellular localization, and interaction networks. PTM Nexus serves as an advanced bioinformatics platform tailored for rigorous comparative analysis of PTMs.
+                            </p>
+                        </div>
+                        <i class="fas fa-bullseye text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-4 d-flex flex-column align-items-center">
-            <h3>Methodology</h3>
-            <p>
-                First the Jaccard index is calculated between the different proteins provided as a batch or between the protein provided and the proteins in our database.
-                Then a 
-            </p>
-            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1 pe-4">
+                            <h3 class="card-title mb-3">Methodology</h3>
+                            <p class="card-text">
+                                Users of PTM Nexus may conduct comparative analyses through two distinct methodological pathways: Single UniProt ID Analysis and Multiple UniProt IDs Analysis. The platform performs BLAST queries, multiple sequence alignments, and normalizes PTM positions for comprehensive comparative examination.
+                            </p>
+                        </div>
+                        <i class="fas fa-flask text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-4 d-flex flex-column align-items-center">
-            <h3>Parameters</h3>
-            <p>
-                hola
-            </p>
-            <img src="{{ url_for('static', filename='karim.jpg') }}" class="mt-auto" style="width:90%;">
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1 pe-4">
+                            <h3 class="card-title mb-3">Parameters</h3>
+                            <p class="card-text">
+                                PTM Nexus offers customizable parameters to optimize comparative PTM analyses, including: UniProt ID input, PTM Type selection, Organism constraints, and adjustable proximity-based matching. The platform provides flexibility in analyzing PTM conservation across different protein sequences.
+                            </p>
+                        </div>
+                        <i class="fas fa-cogs text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
             </div>
         </div>
-        </div>
-    </section>
+    </div>
+</section>
 
 <!-- LOGIN AND SIGNUP SECTION -->
 <section id="signup"></section>
-<section id="login" class="login">
+<section id="login" class="login py-3">
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
         <!-- Login Form -->
         <div class="card shadow-lg p-4 rounded-3" id="login-form" style="width: 600px;">
@@ -105,40 +121,59 @@
     </div>
 </section>
 
-<section class="Team">
-    <h2 class="display-4 text-white">Meet Our Team</h2>
+
+<section class="Team py-5">
     <div class="container">
-        <div class="row">
-            <div class="col-md-6 text-center">
-                <img src="{{ url_for('static', filename = 'karim.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
-                <div style="margin-top: 5;margin-bottom: 4;">
-                <h3 style="margin-top: 20px; margin-bottom: 10px;">Karim Hamed</h3></div>
-                <h4 style="margin-top: 10px; margin-bottom: 10px;">Back-end developer</h4>
-                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biomedicine in UIC Barcelona. Experienced in database and website development </p>
+        <h2 class="display-4 text-center mb-5 text-white">Meet Our Team</h2>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <div class="col">
+                <div class="card h-100 text-center shadow-lg">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <img src="{{ url_for('static', filename='karim.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        <h3 class="card-title">Karim Hamed</h3>
+                        <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
+                        <p class="card-text">International Catalan University (UIC), Barcelona</p>
+                        <p class="card-text text-muted mt-auto">Database Developer<br>Back-end Developer<br>DevOps Engineer</p>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 text-center">
-                <img src="{{ url_for('static', filename = 'nuria.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
-                <h3 style="margin-top: 20px; margin-bottom: 10px;">Núria Montalà</h3>
-                <h4 style="margin-top: 10px; margin-bottom: 10px;">Back-end developer</h4>
-                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biology in . Experienced in </p>
+            <div class="col">
+                <div class="card h-100 text-center shadow-lg">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <img src="{{ url_for('static', filename='nuria.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        <h3 class="card-title">Núria Montalà</h3>
+                        <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
+                        <p class="card-text">Rovira i Virgili University (URV), Tarragona</p>
+                        <p class="card-text text-muted mt-auto">UI/UX Designer<br>Database Developer<br>Back-end Developer</p>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 text-center">
-                <img src="{{ url_for('static', filename = 'adam.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
-                <h3 style="margin-top: 20px; margin-bottom: 10px;">Adam Martí</h3>
-                <h4 style="margin-top: 10px; margin-bottom: 10px;">Database developer</h4>
-                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biochemistry in UV Valencia. Proficient in protein structural analysis</p>
+            <div class="col">
+                <div class="card h-100 text-center shadow-lg">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <img src="{{ url_for('static', filename='adam.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        <h3 class="card-title">Adam Martí</h3>
+                        <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
+                        <p class="card-text">University of Valencia (UV), Valencia</p>
+                        <p class="card-text text-muted mt-auto">UI/UX Designer<br>Database Developer<br>Documentation Specialist</p>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 text-center">
-                <img src="{{ url_for('static', filename = 'maider.jpg') }}" class="img-fluid" style="width: 100%; max-width: 300px;">
-                <h3 style="margin-top: 20px; margin-bottom: 10px;">Maider Fernandez de Mendiola</h3>
-                <h4 style="margin-top: 10px; margin-bottom: 10px;">Front-end developer</h4>
-                <p style="margin-top: 10px; margin-bottom: 10px;">Studied Biology in UPV/EHU Bilbao. Experience in something. </p>
+            <div class="col">
+                <div class="card h-100 text-center shadow-lg">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <img src="{{ url_for('static', filename='maider.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        <h3 class="card-title">Maider Fernandez de Mendiola</h3>
+                        <h4 class="card-subtitle mb-2 text-muted">Biologist</h4>
+                        <p class="card-text">University of Basque Country (UPF/EHU), Leioa</p>
+                        <p class="card-text text-muted mt-auto">Front End Developer<br>Project Communication Lead<br>Database Developer</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

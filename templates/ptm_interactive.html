@@ -9,7 +9,7 @@
 
 <body>
     <h1 style="margin-top: 100px;">Post-Translational Modifications Viewer</h1>
-    <div style="padding: 40px; margin: 0 60px;">
+    <div style="padding: 40px 0 0 0; margin: 0 60px;">
         <div style="overflow-x: auto; border: 1px solid #ccc; width: 100%;">
             <svg width="100%" height="500"></svg>
         </div>
@@ -33,7 +33,7 @@
 <section class="PTM viewer" style="background-color: var(--turquesa);"></div>
         <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
 <div  style="padding: 40px; margin: 0 60px;">
-    <h1 style="text-align: center; margin-bottom: 40px;">Jaccard Similarity Heatmap</h1>
+    <h1 style="text-align: center; margin-bottom: 40px; color:white">Jaccard Similarity Heatmap</h1>
   
     <!-- Contenedor en columna para heatmap, controles y botones -->
     <div style="display: flex; flex-direction: column; align-items: stretch; gap: 30px;">
@@ -48,17 +48,17 @@
             </div>
     
             <!-- Controles -->
-            <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
+            <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px; color:white;">
             
                 <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
-                    <label for="min-color">Min Color:</label>
+                    <label style=" color:white" for="min-color">Min Color:</label>
                     <input type="color" id="min-color" value="#f8f7f7 ">
-                    <label for="max-color">Max Color:</label>
+                    <label style=" color:white" for="max-color">Max Color:</label>
                     <input type="color" id="max-color" value="#3d189d">
                 </div>
     
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
-                    <label for="heatmap-style">Heatmap style:</label>
+                    <label style=" color:white" for="heatmap-style">Heatmap style:</label>
                     <select id="heatmap-style">
                     <option value="square" selected>Square</option>
                     <option value="circle">Circle</option>
@@ -66,17 +66,17 @@
                 </div>
     
                 <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px; color:white;">
                     <input type="checkbox" id="show-values" checked>
                     <span>Show Jaccard values</span>
                     </label>
             
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;color:white;">
                     <input type="checkbox" id="upper-triangle-only">
                     <span>Show only upper triangle</span>
                     </label>
     
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;color:white;">
                     <input type="checkbox" id="toggle-legend" checked>
                     <span>Show color legend</span>
                     </label>

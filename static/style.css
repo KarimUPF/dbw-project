@@ -295,8 +295,6 @@ h4, .h4 {
     font-size: large;
     font-weight: 500;
     font-family: monospace;
-    text-align: left;
-    padding-left: 80px;
 }
 
 p, .p {
@@ -307,11 +305,47 @@ p, .p {
     background-color: var(--turquesa); /* Example dark background */
     padding: 20px;
 }
+/* Team Section Enhancements */
+.Team .card {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important; /* More pronounced shadow */
+}
+
+.Team .card-body {
+    text-align: center; 
+    padding: 25px; 
+}
+
+.Team .card-text {
+    text-align: center; 
+}
 
 .Information{
-    background-color: var(--turquesa); /* Example dark background */
+    background-color: var(--turquesa); 
     padding: 20px;
 }
+.Information .card {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important; 
+    margin-bottom: 20px;
+}
+
+.Information .card-body {
+    padding: 30px; 
+}
+
+.Information .card i.fas {
+    font-size: 5rem !important; 
+    margin-left: 15px;
+}
+
+/* Login Section Enhancements */
+.login .card {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important; 
+}
+
+.login .card-body {
+    padding: 25px; 
+}
+
 
 body {
     font-family: Courier;

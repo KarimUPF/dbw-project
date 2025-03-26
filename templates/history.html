@@ -38,7 +38,7 @@
                             data-ptms="{{ query.parameters['ptm_types'] | join(',') if query.parameters['ptm_types'] else '' }}"
                             data-organisms="{{ query.parameters['organism_filter'] | join(',') if query.parameters['organism_filter'] else '' }}"
                             data-date="{{ query.date.isoformat() }}"
-                            style="margin-bottom: 20px; background-color: #f4f4f4; padding: 15px; border-radius: 8px;">
+                            style="margin-bottom: 20px; background-color: #f4f4f4; padding: 20px 40px; border-radius: 8px;">
                             
                             <p><strong>Date:</strong> {{ query.date.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                             <p><strong>Proteins:</strong> {{ query.parameters['protein_ids'] | join(', ') }}</p>

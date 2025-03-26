@@ -4,7 +4,7 @@ from models.all_models import *
 
 with app.app_context():
     # Load the JSON file
-    with open("swissprot_data.json", "r") as file:  # Ensure correct path
+    with open("uniprotkb_AND_reviewed_true_AND_existen_2025_03_26.json", "r") as file:  # Ensure correct path
         data = json.load(file)
 
     print("Data loaded")

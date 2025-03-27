@@ -29,12 +29,14 @@
                 <div class="card shadow-lg">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-grow-1 pe-4">
-                            <h3 class="card-title mb-3">Objective</h3>
+                            <h2 class="card-title mb-3">Objective</h2>
                             <p class="card-text">
-                                Post-translational modifications (PTMs) constitute covalent chemical modifications occurring on proteins subsequent to ribosomal synthesis, critically influencing their functional repertoire, structural integrity, subcellular localization, and interaction networks. PTM Nexus serves as an advanced bioinformatics platform tailored for rigorous comparative analysis of PTMs.
+                                Post-translational modifications (PTMs) are chemical modifications that regulate protein function, structure, localization, and interactions. Key PTMs like phosphorylation, acetylation, methylation, and ubiquitination influence cellular signaling, gene expression, and metabolism. Identifying conserved PTM sites aids in understanding functional conservation, evolution, and disease mechanisms.                            </p>
+                            <p class="card-text">
+                                PTM Nexus is an advanced bioinformatics platform designed for the comparative analysis of PTMs. It focuses on the conservation and divergence of PTM profiles among related proteins, enabling researchers to systematically identify conserved modification patterns, infer functional significance, and reconstruct evolutionary relationships through PTM-centric analyses.                            
                             </p>
                         </div>
-                        <i class="fas fa-bullseye text-primary" style="font-size: 3rem;"></i>
+                        <i class="fas fa-bullseye text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -42,12 +44,18 @@
                 <div class="card shadow-lg">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-grow-1 pe-4">
-                            <h3 class="card-title mb-3">Methodology</h3>
+                            <h2 class="card-title mb-3">Methodology</h2>
                             <p class="card-text">
-                                Users of PTM Nexus may conduct comparative analyses through two distinct methodological pathways: Single UniProt ID Analysis and Multiple UniProt IDs Analysis. The platform performs BLAST queries, multiple sequence alignments, and normalizes PTM positions for comprehensive comparative examination.
+                                Users of PTM Nexus may conduct comparative analyses through two distinct methodological pathways: 
+                            </p>
+                            <p class="card-text">
+                                <p style="margin-left: 40px;"><strong>Single UniProt ID Analysis:</strong> Performs a BLAST search against the Swiss-Prot database to identify the ten closest protein sequences. These, along with the query, undergo multiple sequence alignment via ClustalW. PTM positions from the query are normalized to the alignment length for comparative analysis.
+                            </p>
+                            <p class="card-text">
+                                <p style="margin-left: 40px;"><strong>Multiple UniProt IDs Analysis:</strong> Performs multiple sequence alignment without a BLAST search, normalizing PTM positions by alignment length for precise comparative analysis within the chosen protein set.
                             </p>
                         </div>
-                        <i class="fas fa-flask text-primary" style="font-size: 3rem;"></i>
+                        <i class="fas fa-flask text-primary" ></i>
                     </div>
                 </div>
             </div>
@@ -55,12 +63,17 @@
                 <div class="card shadow-lg">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-grow-1 pe-4">
-                            <h3 class="card-title mb-3">Parameters</h3>
-                            <p class="card-text">
-                                PTM Nexus offers customizable parameters to optimize comparative PTM analyses, including: UniProt ID input, PTM Type selection, Organism constraints, and adjustable proximity-based matching. The platform provides flexibility in analyzing PTM conservation across different protein sequences.
-                            </p>
+                            <h2 class="card-title mb-3">Parameters</h2>
+                            <p>PTM Nexus offers customizable parameters to optimize comparative PTM analyses, including:</p>
+                            <p style="margin-left: 40px;"><strong>UniProt ID:</strong> Input one or multiple UniProt identifiers, separated by commas, to initiate PTM-focused searches.</p>
+
+                            <p style="margin-left: 40px;"><strong>PTM Type Selection:</strong> Specify particular classes of PTMs (e.g., phosphorylation, methylation, acetylation) to target within the analysis.</p>
+
+                            <p style="margin-left: 40px;"><strong>Organism constraints:</strong> Constrain the analysis to sequences originating from selected taxa by specifying relevant organisms.</p>
+
+                            <p style="margin-left: 40px;"><strong>Window (0.05-1):</strong> uses an adjustable proximity-based approach to account for PTM variability. Users define a percentile-based window around each PTM, including upstream and downstream regions. PTMs within this range in aligned sequences are considered conserved, allowing for biologically relevant positional flexibility.</p>
                         </div>
-                        <i class="fas fa-cogs text-primary" style="font-size: 3rem;"></i>
+                        <i class="fas fa-cogs text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -133,8 +146,13 @@
                         <img src="{{ url_for('static', filename='karim.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
                         <h3 class="card-title">Karim Hamed</h3>
                         <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
-                        <p class="card-text">International Catalan University (UIC), Barcelona</p>
+                        <p class="card-text">International Catalan University (UIC)</p>
                         <p class="card-text text-muted mt-auto">Database Developer<br>Back-end Developer<br>DevOps Engineer</p>
+                        <div class="social-links mt-3">
+                            <a href="https://www.linkedin.com/in/karimhamed1/" target="_blank" class="text-primary mx-2">
+                                <i class="fab fa-linkedin fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -144,8 +162,13 @@
                         <img src="{{ url_for('static', filename='nuria.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
                         <h3 class="card-title">Núria Montalà</h3>
                         <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
-                        <p class="card-text">Rovira i Virgili University (URV), Tarragona</p>
+                        <p class="card-text">Rovira i Virgili University (URV)</p>
                         <p class="card-text text-muted mt-auto">UI/UX Designer<br>Database Developer<br>Back-end Developer</p>
+                        <div class="social-links mt-3">
+                            <a href="https://www.linkedin.com/in/n%C3%BAria-montal%C3%A0-palau-a33b53254/" target="_blank" class="text-primary mx-2">
+                                <i class="fab fa-linkedin fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -155,8 +178,13 @@
                         <img src="{{ url_for('static', filename='adam.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
                         <h3 class="card-title">Adam Martí</h3>
                         <h4 class="card-subtitle mb-2 text-muted">Molecular Biologist</h4>
-                        <p class="card-text">University of Valencia (UV), Valencia</p>
+                        <p class="card-text">University of Valencia (UV)</p>
                         <p class="card-text text-muted mt-auto">UI/UX Designer<br>Database Developer<br>Documentation Specialist</p>
+                        <div class="social-links mt-3">
+                            <a href="https://www.linkedin.com/in/adam-mart%C3%AD-garc%C3%ADa-b9ab4727a/" target="_blank" class="text-primary mx-2">
+                                <i class="fab fa-linkedin fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -166,15 +194,19 @@
                         <img src="{{ url_for('static', filename='maider.jpg') }}" class="rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
                         <h3 class="card-title">Maider Fernandez de Mendiola</h3>
                         <h4 class="card-subtitle mb-2 text-muted">Biologist</h4>
-                        <p class="card-text">University of Basque Country (UPF/EHU), Leioa</p>
+                        <p class="card-text">University of Basque Country (UPF/EHU)</p>
                         <p class="card-text text-muted mt-auto">Front End Developer<br>Project Communication Lead<br>Database Developer</p>
+                        <div class="social-links mt-3">
+                            <a href="https://www.linkedin.com/in/maider-fernandez-de-mendiola-889550244/" target="_blank" class="text-primary mx-2">
+                                <i class="fab fa-linkedin fa-2x"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

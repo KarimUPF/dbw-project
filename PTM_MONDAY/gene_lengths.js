@@ -1,1 +1,0 @@
-const geneLengths = {'Atoh1': 354, 'Atoh7': 152, 'Atoh8': 321, 'BHLHA15': 189, 'BHLHE22': 381, 'BHLHE23': 241, 'NEUROD2': 382, 'NEUROD1': 356, 'NEUROD4': 331, 'NEUROD6': 337, 'NGN1': 237, 'NGN2': 272, 'NGN3': 214, 'OLIG1': 271, 'OLIG2': 323, 'OLIG3': 272};

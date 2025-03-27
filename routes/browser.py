@@ -27,67 +27,64 @@ def run_blast(protein_id, session, selected_organisms=None):
     Runs BLASTP to find the most similar proteins from MySQL.
     Filters results by organism if specified.
     """
+    # ✅ Crear carpeta de resultados si no existe
+    blast_dir = "results/blast"
+    os.makedirs(blast_dir, exist_ok=True)
+
     # ✅ Get the query protein
     protein = session.query(Protein).filter_by(accession_id=protein_id).first()
     if not protein:
         return []
 
-    # ✅ Save query sequence to a file
-    query_file = "query.fasta"
+    # ✅ Guardar la secuencia de consulta
+    query_file = os.path.join(blast_dir, "query.fasta")
     with open(query_file, "w") as f:
         f.write(f">{protein.accession_id}\n{protein.sequence}\n")
 
-    # ✅ Fetch organism IDs using Organism.id (instead of accession_id)
+    # ✅ Obtener proteínas objetivo
     organism_ids = []
     if selected_organisms:
         organism_ids = session.query(Organism.id).filter(
             Organism.scientific_name.in_(selected_organisms)
         ).all()
-        organism_ids = [oid[0] for oid in organism_ids]  # Unpack tuples
+        organism_ids = [oid[0] for oid in organism_ids]
 
-        # 🔍 Debugging: Show selected organism names and IDs
-        print(f"🔍 DEBUG: Selected organisms: {selected_organisms}")
-        print(f"🔍 DEBUG: Resolved organism IDs: {organism_ids}")
+        print(f"🔍 DEBUG: Organisms: {selected_organisms}")
+        print(f"🔍 DEBUG: IDs: {organism_ids}")
 
-    # ✅ Fetch proteins where `Protein.organism_id` matches `Organism.id`
     target_query = session.query(Protein)
     if organism_ids:
         target_query = target_query.filter(Protein.organism_id.in_(organism_ids))
 
     target_proteins = target_query.all()
+    print(f"🔍 DEBUG: Found {len(target_proteins)} target proteins.")
 
-    # 🔍 Debugging: Show the number of proteins found
-    print(f"🔍 DEBUG: Number of proteins found: {len(target_proteins)}")
-
-    # If no proteins were found, print a warning
     if not target_proteins:
         print("⚠️ WARNING: No proteins found for the selected organisms!")
 
+    # ✅ Escribir FASTA de la base de datos
+    db_fasta = os.path.join(blast_dir, "temp_blast_db.fasta")
+    with open(db_fasta, "w") as f:
+        for protein in target_proteins:
+            if protein.sequence:
+                f.write(f">{protein.accession_id}\n{protein.sequence}\n")
 
-    # ✅ Write proteins to a FASTA file
-    blast_db_file = "temp_blast_db.fasta"
-    with open(blast_db_file, "w") as f:
-        for target_protein in target_proteins:
-            if target_protein.sequence:
-                f.write(f">{target_protein.accession_id}\n{target_protein.sequence}\n")
+    if os.path.getsize(db_fasta) == 0:
+        raise RuntimeError("BLAST database file is empty.")
 
-    # 🚨 Final safety check: Ensure the BLAST DB file is not empty
-    if os.path.getsize(blast_db_file) == 0:
-        raise RuntimeError("BLAST database file is empty. No valid protein sequences were written.")
+    # ✅ Crear base de datos BLAST
+    subprocess.run(["makeblastdb", "-in", db_fasta, "-dbtype", "prot"], check=True)
 
-    # ✅ Create the BLAST database
-    subprocess.run(["makeblastdb", "-in", blast_db_file, "-dbtype", "prot"], check=True)
-
-    # ✅ Run BLASTP against the temporary database
-    blast_output = "blast_results.txt"
+    # ✅ Ejecutar BLASTP
+    blast_output = os.path.join(blast_dir, "blast_results.txt")
     subprocess.run([
-        "blastp", "-query", query_file, "-db", blast_db_file,
+        "blastp", "-query", query_file, "-db", db_fasta,
         "-outfmt", "6 sseqid pident length evalue",
         "-max_target_seqs", "10",
         "-out", blast_output
     ], check=True)
 
-    # ✅ Parse BLAST results
+    # ✅ Parsear resultados
     hits = []
     with open(blast_output, "r") as f:
         for line in f:
@@ -101,16 +98,14 @@ def run_blast(protein_id, session, selected_organisms=None):
                 "evalue": float(parts[3])
             })
 
-    # ✅ Sort by identity (descending) and e-value (ascending)
     hits.sort(key=lambda x: (-x["identity"], x["evalue"]))
-
-    # ✅ Return the top 10 protein IDs
     return [hit["id"] for hit in hits[:10]]
+
 
 
 def align_sequences(proteins):
     """Align proteins with Clustal Omega and generate distance-based tree."""
-    fasta_file = "sequences.fasta"
+    fasta_file = "results/clustal/sequences.fasta"
     
     with open(fasta_file, "w") as f:
         for protein in proteins:
@@ -120,7 +115,7 @@ def align_sequences(proteins):
     if os.path.getsize(fasta_file) == 0:
         raise ValueError("No valid sequences were found in the proteins list")
     
-    aligned_file = "aligned.fasta"
+    aligned_file = "results/clustal/aligned.fasta"
     
     result = subprocess.run(
         ["clustalo", "-i", fasta_file, "-o", aligned_file, "--force"], 
@@ -340,7 +335,7 @@ def align_and_update_ptms():
 
 @ptm_comparator.route('/download_fasta', methods=['GET'])
 def download_fasta():
-    fasta_file_path = "aligned.fasta"  
+    fasta_file_path = "results/clustal/aligned.fasta"  
     return send_file(fasta_file_path, as_attachment=True, download_name="aligned.fasta")
 
 

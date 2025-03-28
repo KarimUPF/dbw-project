@@ -8,1103 +8,1367 @@
 </head>
 
 <body>
-    <h1 style="margin-top: 100px;">Post-Translational Modifications Viewer</h1>
-    <div style="padding: 40px 0 0 0; margin: 0 60px;">
-        <div style="overflow-x: auto; border: 1px solid #ccc; width: 100%;">
-            <svg width="100%" height="500"></svg>
-        </div>
-    </div>
-    
-    <div class="ptm-tooltip"></div>
+    <h1 style="margin-top: 100px;">Search results</h1>
 
-        <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
-            background:white; border:1px solid #ccc; padding:20px; z-index:2000; border-radius:10px; max-width:500px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-            <span id="close-ptm-modal" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
-            <div id="ptm-modal-content"></div>
-        </div>
-
-
-        <div style="margin: 40px auto; text-align: center;">
-            <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
-        </div>
-    </div>
-
-  
-<section class="PTM viewer" style="background-color: var(--turquesa);"></div>
-        <!-- NUEVO BLOQUE: Heatmap junto a árboles -->
-<div  style="padding: 40px; margin: 0 60px;">
-    <h1 style="text-align: center; margin-bottom: 40px; color:white">Jaccard Similarity Heatmap</h1>
-  
-    <!-- Contenedor en columna para heatmap, controles y botones -->
-    <div style="display: flex; flex-direction: column; align-items: stretch; gap: 30px;">
-  
-      <!-- Heatmap + controles en fila -->
-      <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
-        
-            <!-- Heatmap -->
-            <div style="flex: 1; min-width: 400px; max-width: 900px; display: flex; flex-direction: column; align-items: center;">
-            <svg id="heatmap" width="600" height="600"></svg>
-            <div class="heatmap-tooltip"></div>
-            </div>
-    
-            <!-- Controles -->
-            <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px; color:white;">
-            
-                <div id="color-controls" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">            
-                    <label style=" color:white" for="min-color">Min Color:</label>
-                    <input type="color" id="min-color" value="#f8f7f7 ">
-                    <label style=" color:white" for="max-color">Max Color:</label>
-                    <input type="color" id="max-color" value="#3d189d">
-                </div>
-    
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 20px;">
-                    <label style=" color:white" for="heatmap-style">Heatmap style:</label>
-                    <select id="heatmap-style">
-                    <option value="square" selected>Square</option>
-                    <option value="circle">Circle</option>
-                    </select>
-                </div>
-    
-                <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px; color:white;">
-                    <input type="checkbox" id="show-values" checked>
-                    <span>Show Jaccard values</span>
-                    </label>
-            
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;color:white;">
-                    <input type="checkbox" id="upper-triangle-only">
-                    <span>Show only upper triangle</span>
-                    </label>
-    
-                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;color:white;">
-                    <input type="checkbox" id="toggle-legend" checked>
-                    <span>Show color legend</span>
-                    </label>
-                </div>
-    
-            </div>
-      </div>
-  
-      <!-- Botones alineados -->
-        <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px; gap: 60px;">
-
-            <!-- Botón debajo del heatmap -->
-            <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
-            <a id="download-heatmap" class="btn btn-primary" style="width: 300px; text-align: center;">Download Heatmap (PNG)</a>
+    <div class="container" style="display: flex; height: 100%; width: 100%; align-items: center; justify-content: center;">
+        <div class="grid" style="display: grid; height: 100%; width: 100%; grid-template-columns: repeat(4, 1fr); grid-template-rows: auto auto auto auto; gap: 16px; background-color: #eee; padding: 8px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1);">
+      
+          <!-- Phylogenetic Tree (Salmon) -->
+          <div style="font-family: 'M PLUS 2 Variable', sans-serif; grid-column: span 2; grid-row: span 2; background-color: #fcfcfc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; padding: 20px; overflow: hidden;">
+            <h2 style="margin-bottom: 10px;">Phylogenetic Tree</h2>
+      
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 15px;">
+              <label for="tree-style">Tree style:</label>
+              <select id="tree-style" style="max-width: 120px;">
+                <option value="rectangular">Rectangular</option>
+                <option value="radial">Radial</option>
+                <option value="circular">Circular</option>
+              </select>
+              <label for="branch-style">Branch style:</label>
+              <select id="branch-style" style="max-width: 120px;">
+                <option value="curve">Curved</option>
+                <option value="line">Straight</option>
+              </select>
             </div>
       
-            <!-- Botón debajo de los controles -->
-            <div style="flex: 1; display: flex; justify-content: center; max-width: 900px;">
-            <a id="download-csv" class="btn btn-primary" style="width: 300px; text-align: center;">Download Table (CSV)</a>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 15px;">
+              <label for="node-color">Node color:</label>
+              <input type="color" id="node-color" value="#4682B4" style="max-width: 110px;">
+              <label for="branch-color">Branch color:</label>
+              <input type="color" id="branch-color" value="#4A90E2" style="max-width: 110px;">
             </div>
-        </div>
-  
-    </div>
-</div>
-</section>
-  
-  
-
-<script>
-
-// Fetch PTM and sequence alignment data from Flask
-const sequences = JSON.parse('{{ sequences | tojson | safe }}');
-const ptmData = JSON.parse('{{ ptm_data | tojson | safe }}');
-
-const svg = d3.select("svg");
-const margin = { top: 50, right: 20, bottom: 50, left: 150 };
-const numProteins = Object.keys(sequences).length;
-const maxSeqLength = Math.max(...Object.values(sequences).map(seq => seq.length));
-const baseWidth = 800;
-const width = Math.max(baseWidth, maxSeqLength * 12);  // Adjust width for sequence length
-const height = numProteins * 80 + margin.top + margin.bottom;  // Increased height for PTMs
-
-svg.attr("width", width + margin.left + margin.right);
-svg.attr("height", height);
-
-// Y-scale for protein alignment rows
-const yScale = d3.scaleBand()
-    .domain(Object.keys(sequences))
-    .range([margin.top, height])
-    .padding(0.5);
-
-// Add protein labels on the left
-svg.selectAll(".protein-label")
-    .data(Object.keys(sequences))
-    .enter().append("text")
-    .attr("class", "protein-label")
-    .attr("x", margin.left - 10)
-    .attr("y", d => yScale(d))
-    .attr("text-anchor", "end")
-    .attr("font-weight", "bold")
-    .attr("fill", "#5f585a")
-    .text(d => d);
-
-// Define color scheme for amino acids (AA)
-const aminoAcidColors = {
-    "A": "#a8d5a2",  "V": "#a8d5a2",  "L": "#a8d5a2",  "I": "#a8d5a2",  "M": "#a8d5a2",  
-    "F": "#b0c4de",  "Y": "#b0c4de",  "W": "#b0c4de",                                  
-    "K": "#f4a3a3",  "R": "#f4a3a3",  "H": "#f4a3a3",                                  
-    "D": "#dab6fc",  "E": "#dab6fc",                                                  
-    "S": "#ffddaa",  "T": "#ffddaa",  "N": "#ffddaa",  "Q": "#ffddaa",               
-    "C": "#f2e09f",  "G": "#d3d3d3",  "P": "#deb887",                                 
-    "-": "#eaeaea"                                                                  
-};
-
-// Display aligned sequences as text
-Object.entries(sequences).forEach(([proteinId, sequence]) => {
-    svg.selectAll(`.seq-${proteinId}`)
-        .data(sequence.split(""))
-        .enter().append("text")
-        .attr("class", "sequence")
-        .attr("x", (d, i) => margin.left + i * 12)  
-        .attr("y", yScale(proteinId) )
-        .attr("text-anchor", "middle")
-        .text(d => d)
-        .attr("font-family", "Courier")
-        .attr("font-weight", "bold") 
-        .attr("fill", d => aminoAcidColors[d] || "black"); // Gaps in gray
-});
-
-// PTM color coding
-
-// Convert PTM name to a consistent HSL color using hash
-function stringToColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 100%, 50%)`;  // vibrant consistent color
-}
-
-// Build list of unique PTM types from your data
-const ptmTypes = new Set();
-Object.values(ptmData).forEach(ptms => {
-    Object.values(ptms).forEach(ptm => {
-        if (ptm.type) {
-            ptmTypes.add(ptm.type);
-        }
-    });
-});
-
-// Assign each PTM type a consistent color
-const ptmColors = {};
-ptmTypes.forEach(type => {
-    ptmColors[type] = stringToColor(type);
-});
-
-// Fallback color
-ptmColors["Other"] = "#444";
-
-const arrowPath = "M0 0-5.2-5.2-5.2-16.9 0-11.7 5.2-16.9 5.2-5.2 0 0";
-
-const animationDistance = 5; // Distance to move up and down
-const animationDuration = 800; // Duration of the animation in milliseconds
-
-
-const ptmTooltip = d3.select(".ptm-tooltip");
-
-const bounce = (selection, d, yBase) => {
-    const x = margin.left + (d[1].new_position / maxSeqLength) * width;
-
-    selection.transition()
-        .duration(animationDuration)
-        .ease(d3.easeSinInOut)
-        .attr("transform", `translate(${x}, ${yBase + animationDistance})`)
-        .transition()
-        .duration(animationDuration)
-        .ease(d3.easeSinInOut)
-        .attr("transform", `translate(${x}, ${yBase - animationDistance})`)
-        .transition()
-        .duration(animationDuration)
-        .ease(d3.easeSinInOut)
-        .attr("transform", `translate(${x}, ${yBase})`)
-        .on("end", () => {
-            setTimeout(() => bounce(selection, d, yBase), 10); // pequeño delay opcional
-        });
-};
-
-
-
-// Adjust PTM positions based on alignment gaps
-Object.entries(ptmData).forEach(([proteinId, ptms]) => {
-    if (!ptms || Object.keys(ptms).length === 0) return;
-
-    let alignedSequence = sequences[proteinId].split("");
-    let ungappedPosition = 0;
-    let ptmPositions = {};
-
-    // Map original PTM positions to new aligned positions
-    alignedSequence.forEach((char, alignedIndex) => {
-        if (char !== "-") {
-            ungappedPosition++;
-        }
-        ptmPositions[ungappedPosition] = alignedIndex;  // Store new mapped position
-    });
-
- // Draw PTM markers at the correct positions (above the sequence)
- const ptmArrows = svg.selectAll(`.ptm-${proteinId}`)
-    .data(Object.entries(ptms))
-    .enter().append("path")
-    .attr("class", "ptm")
-    .attr("d", arrowPath)
-    .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 20})`)
-    .attr("fill", d => ptmColors[d[1].type] || "black")
-    .attr("stroke", "none")
-    .attr("stroke-width", "0px")
-    .on("mouseover", function(event, d) {
-        const ptmType = d[1].type;
-        ptmTooltip.style("display", "block")
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 10) + "px")
-            .html(`
-                <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
-                <div class="ptm-tooltip-content">
-                    <strong>Type:</strong> <span class="ptm-info-link" style="color:blue; text-decoration:underline; cursor:pointer;" data-ptm="${ptmType}">${ptmType}</span><br>
-                    <strong>Original Position:</strong> ${d[1].original_position}<br>
-                    <strong>New Position:</strong> ${d[1].new_position}
+      
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+              <label for="phylo-size" style="white-space: nowrap;">Tree size:</label>
+              <input type="range" id="phylo-size" min="400" max="1000" value="300" style="flex: 1;">
+            </div>
+      
+            <div id="tree-container-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 300px; width: 100%;">
+              <div id="tree-container" style="min-width: 600px;"></div>
+            </div>
+      
+            <div style="margin-top: 20px; text-align: center;">
+              <button id="download-tree" class="btn btn-primary" style="max-width: 300px; width: 100%;">Download Phylogenetic Tree (PNG)</button>
+            </div>
+          </div>
+      
+          <!-- Jaccard Similarity Tree (Broccoli) -->
+          <div style="font-family: 'M PLUS 2 Variable', sans-serif; grid-column: span 2; grid-row: span 2; background-color: #fcfcfc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; padding: 20px; overflow: hidden;">
+            <h2 style="margin-bottom: 10px;">Jaccard Similarity Tree</h2>
+      
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 15px;">
+              <label for="jaccard-tree-style">Tree style:</label>
+              <select id="jaccard-tree-style" style="max-width: 120px;">
+                <option value="rectangular">Rectangular</option>
+                <option value="radial">Radial</option>
+                <option value="circular">Circular</option>
+              </select>
+              <label for="jaccard-line-type">Branch style:</label>
+              <select id="jaccard-line-type" style="max-width: 120px;">
+                <option value="curved">Curved</option>
+                <option value="straight">Straight</option>
+              </select>
+            </div>
+      
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 15px;">
+              <label for="jaccard-node-color">Node color:</label>
+              <input type="color" id="jaccard-node-color" value="#4682B4" style="max-width: 110px;">
+              <label for="jaccard-link-color">Branch color:</label>
+              <input type="color" id="jaccard-link-color" value="#4A90E2" style="max-width: 110px;">
+            </div>
+      
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+              <label for="jaccard-size" style="white-space: nowrap;">Tree size:</label>
+              <input type="range" id="jaccard-size" min="400" max="1000" value="300" style="flex: 1;">
+            </div>
+      
+            <div id="jaccard-tree-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 300px; width: 100%;">
+              <svg id="jaccard-phylotree" width="600" height="300"></svg>
+            </div>
+      
+            <div style="margin-top: 20px; text-align: center;">
+              <button id="download-jaccard-png" class="btn btn-primary" style="max-width: 330px; width: 100%;">Download Jaccard Similarity Tree (PNG)</button>
+            </div>
+          </div>
+      
+          <!-- Jaccard Similarity Heatmap (Tamago) -->
+            <div style="font-family: 'M PLUS 2 Variable', sans-serif; grid-column: span 3; grid-row: span 2; background-color: #fcfcfc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; padding: 20px; overflow: auto;">
+                <h2 style="text-align: center; margin-bottom: 20px;">Jaccard Similarity Heatmap</h2>
+            
+                <div style="display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start;">
+                <div style="flex: 1; min-width: 1000px; max-width: 1500px; display: flex; flex-direction: column; align-items: center;">
+                    <svg id="heatmap" width="600" height="600"></svg>
+                    <div class="heatmap-tooltip"></div>
                 </div>
-            `);
-    })
-    .on("mouseout", function() {
-        setTimeout(() => {
-            if (!ptmTooltip.node().matches(':hover')) {
-                ptmTooltip.style("display", "none");
-            }
-        }, 200);
-    });
-
-// Llama a bounce para cada flecha
-ptmArrows.each(function(d) {
-    const yBase = yScale(proteinId) - 20;  // usa mismo offset que en .attr("transform")
-    bounce(d3.select(this), d, yBase);
-});
-
-
-
-// Evitar que el tooltip desaparezca si el cursor está sobre él
-ptmTooltip.on("mouseover", function() {
-    ptmTooltip.style("display", "block");
-}).on("mouseout", function() {
-    ptmTooltip.style("display", "none");
-});
-
-// Dictionary with textual information about each PTM
-const ptmDescriptions = {
-    "phospho": "Phosphorylation involves the addition of a phosphate group, typically to serine, threonine, or tyrosine residues. It is a key regulatory mechanism in signaling pathways, enzyme activity, and protein interactions.",
-    "n6-acetyl": "N6-acetylation modifies the ε-amino group of lysine residues by adding an acetyl group. It is crucial in chromatin remodeling, transcriptional regulation, and protein stability.",
-    "omega-n-methyl": "Omega-N-methylation refers to the methylation of terminal nitrogen atoms on lysine or arginine side chains. It modulates protein-protein interactions and affects chromatin structure and signaling.",
-    "asymmetric dimethyl": "Asymmetric dimethylation involves adding two methyl groups to the same terminal nitrogen of an arginine residue. It affects RNA processing and transcriptional regulation.",
-    "n-acetyl": "N-acetylation is the covalent attachment of an acetyl group to the N-terminal residue of a protein. It influences protein lifespan, folding, localization, and interaction networks.",
-    "n5-methyl": "N5-methylation involves methylation of nitrogen at position 5 of glutamine or arginine. It's associated with enzyme regulation and gene expression.",
-    "5-glutamyl polyglutamate": "Polyglutamylation consists of attaching several glutamate residues to the γ-carboxyl group of glutamate side chains, notably in tubulin, affecting stability and interactions.",
-    "n6-succinyl": "N6-succinylation adds a succinyl group to lysine residues, introducing a negative charge. It influences metabolism, chromatin structure, and mitochondrial protein regulation.",
-    "persulfide": "Persulfidation forms a persulfide (-SSH) group on cysteine residues. It is involved in antioxidant defense and redox-based signal transduction.",
-    "methyl ester": "Methyl esterification adds a methyl group to carboxylic acid side chains like glutamate or aspartate. It can affect electrostatics and reactivity.",
-    "(3r)-3-hydroxy": "3R-3-hydroxylation introduces a hydroxyl group in the R-configuration on side chains, impacting local folding and hydrogen bonding.",
-    "n6-methyl": "N6-methylation involves methylating the ε-amino group of lysine, frequently in histones, and plays a role in epigenetic regulation.",
-    "n6-carboxy": "N6-carboxylation introduces a carboxylic acid group to lysine residues, potentially altering protein charge and binding capacity.",
-    "citrulline": "Citrullination converts arginine into citrulline through deimination. It modulates immune response and is involved in autoimmune diseases.",
-    "symmetric dimethyl": "Symmetric dimethylation adds one methyl group to each nitrogen of the guanidino group of arginine. It impacts RNA binding and gene expression.",
-    "n6-(2-hydroxyisobutyryl)": "This modification adds a hydroxyisobutyryl group to lysine and is associated with metabolic state-dependent transcriptional regulation.",
-    "n6-(beta-hydroxybutyryl)": "N6-β-hydroxybutyrylation links lysine residues to ketone metabolism and is induced during fasting or ketogenic conditions.",
-    "n6-lactoyl": "N6-lactoylation links lactate-derived moieties to lysine residues and has been connected to metabolic regulation of gene expression.",
-    "n6-crotonyl": "Crotonylation is the addition of a crotonyl group to lysine, marking active gene transcription in chromatin.",
-    "n6-glutaryl": "Glutarylation is a negatively charged acylation on lysine linked to mitochondrial and metabolic regulation.",
-    "4-hydroxy": "4-Hydroxylation modifies proline and lysine residues, especially in collagen, and contributes to structural protein stability.",
-    "(3s)-3-hydroxy": "3S-3-hydroxylation introduces a hydroxyl group in the S-configuration on certain amino acid residues, influencing polarity and reactivity.",
-    "amide": "Amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-nitroso": "S-nitroso is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-biotinyl": "N6-biotinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "diphospho": "Diphosphorylation adds two phosphate groups to residues like serine, threonine, or tyrosine, often as part of kinase cascades or protein activation.",
-    "n6-methylated": "N6-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "pros-methyl": "Pros-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-glutathionyl": "S-glutathionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6,n6-dimethyl": "N6,n6-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-lipoyl": "N6-lipoyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "pyrrolidone carboxylic acid": "Pyrrolidone carboxylic acid is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "dimethylated": "Dimethylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6,n6,n6-trimethyl": "N6,n6,n6-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "iodo": "Iodo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "sulfo": "Sulfation is the addition of a sulfate group to tyrosine or carbohydrate moieties, often modulating receptor-ligand binding or extracellular signaling.",
-    "thyroxine": "Thyroxine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "triiodothyronine": "Triiodothyronine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "diiodo": "Diiodination involves adding two iodine atoms to tyrosine residues. It is a precursor to thyroid hormones like T3 and T4.",
-    "deamidated": "Deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "o-(pantetheine 4'-phosphoryl)": "O-(pantetheine 4'-phosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "4-carboxyglutamate": "4-carboxyglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) o-acetyl": "(microbial infection) o-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "hydroxy": "Hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "phenyl amide": "Phenyl amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-(pyridoxal phosphate)": "N6-(pyridoxal phosphate) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "sulfonic acid (-so3h)": "Sulfonic acid (-so3h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "sulfenic acid (-soh)": "Sulfenic acid (-soh) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(3r)-3-hydroxyaspartate": "(3r)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n,n,n-trimethyl": "N,n,n-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-(retinylidene)": "N6-(retinylidene) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "3'-nitro": "3'-nitro is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "adp-ribosyl": "Adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-(2-succinyl)": "S-(2-succinyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-(adp-ribosyl)": "N6-(adp-ribosyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-butyryl": "N6-butyryl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "polyadp-ribosyl": "Polyadp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-malonyl": "N6-malonyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "2',4',5'-topaquinone": "2',4',5'-topaquinone is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) phospho": "(microbial infection) phospho is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-hydroxy": "5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "3-hydroxy": "3-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-methyl": "S-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "tele-methyl": "Tele-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) deamidated": "(microbial infection) deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "1-thio": "1-thio is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "glycyl adenylate": "Glycyl adenylate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "blocked amino end (ser)": "Blocked amino end (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-cysteinyl": "S-cysteinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "beta-decarboxylated aspartate": "Beta-decarboxylated aspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "1-amide": "1-amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "al": "Al is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl dopamine": "5-glutamyl dopamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl serotonin": "5-glutamyl serotonin is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "sulfoxide": "Sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n,n-dimethyl": "N,n-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "blocked amino end (thr)": "Blocked amino end (thr) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n-methyl": "N-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl": "5-glutamyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "3'-bromo": "3'-bromo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-(dipyrrolylmethanemethyl)": "S-(dipyrrolylmethanemethyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "omega-n-methylated": "Omega-n-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "3-oxo (cys)": "3-oxo (cys) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl histamine": "5-glutamyl histamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) adp-ribosyl": "(microbial infection) adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n4,n4-dimethyl": "N4,n4-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl glycerylphosphorylethanolamine": "5-glutamyl glycerylphosphorylethanolamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "o-amp-": "O-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) adp-ribosyldiphthamide": "(microbial infection) adp-ribosyldiphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "diphthamide": "Diphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-1-carboxyethyl": "N6-1-carboxyethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(3s)-3-hydroxyaspartate": "(3s)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "pyruvic acid (ser)": "Pyruvic acid (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "sulfinic acid (-so2h)": "Sulfinic acid (-so2h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-(2,3-dicarboxypropyl)": "S-(2,3-dicarboxypropyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "aspartate 1-(chondroitin 4-sulfate)-ester": "Aspartate 1-(chondroitin 4-sulfate)-ester is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-8alpha-fad": "S-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "blocked amino end (gln)": "Blocked amino end (gln) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl poly": "5-glutamyl poly is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "tele-8alpha-fad": "Tele-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "o-acetyl": "O-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) adp-riboxanated": "(microbial infection) adp-riboxanated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n-acetylaspartate": "N-acetylaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(r)-sulfoxide": "(r)-sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) o-amp-": "(microbial infection) o-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n-acetylglutamate": "N-acetylglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-acetyl-n6-methyl": "N6-acetyl-n6-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n6-propionyl": "N6-propionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) o-(2-cholinephosphoryl)": "(microbial infection) o-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "hypusine": "Hypusine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n-pyruvate 2-iminyl-": "N-pyruvate 2-iminyl- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "s-cgmp-": "S-cgmp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "o-(2-cholinephosphoryl)": "O-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) s-methyl": "(microbial infection) s-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "5-glutamyl glutamate": "5-glutamyl glutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(4r)-5-hydroxy": "(4r)-5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(4r)-5-oxo": "(4r)-5-oxo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "thiazolidine linkage to a ring-opened dna abasic site": "Thiazolidine linkage to a ring-opened dna abasic site is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "n-acetylthreonine": "N-acetylthreonine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "pyrrolidone carboxylic acid (glu)": "Pyrrolidone carboxylic acid (glu) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "(microbial infection) n6-acetyl": "(microbial infection) n6-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "4-hydroxynonenal-conjugated": "4-hydroxynonenal-conjugated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
-    "Other": "Unclassified post-translational modification. Please consult specialized databases for more details."
-};
-
-// Listen for clicks on any element with the class .ptm-info-link
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("ptm-info-link")) {
-        const ptmType = e.target.getAttribute("data-ptm");
-        const description = ptmDescriptions[ptmType] || "No description available for this PTM type.";
-        document.getElementById("ptm-modal-content").innerHTML = `<h3>${ptmType}</h3><p>${description}</p>`;
-        document.getElementById("ptm-modal").style.display = "block";
-    }
-});
-
-// Close the modal when the close button is clicked
-document.getElementById("close-ptm-modal").addEventListener("click", function() {
-    document.getElementById("ptm-modal").style.display = "none";
-});
-
-
-});
-
-</script>
-
-
-
-
-
-<script>
-const heatmapTooltip = d3.select(".heatmap-tooltip");
-const heatmapSvg = d3.select("#heatmap");
-const heatmapMargin = { top: 100, right: 50, bottom: 100, left: 100 };
-const heatmapWidth = 600 - heatmapMargin.left - heatmapMargin.right;
-const heatmapHeight = 600 - heatmapMargin.top - heatmapMargin.bottom;
-
-const proteinIds = Object.keys(sequences);
-const cellSize = Math.min(heatmapWidth, heatmapHeight) / proteinIds.length;
-
-const heatmapG = heatmapSvg.append("g")
-    .attr("transform", `translate(${heatmapMargin.left},${heatmapMargin.top})`);
-
-const defs = heatmapSvg.append("defs");
-const gradient = defs.append("linearGradient")
-    .attr("id", "legend-gradient")
-    .attr("x1", "0%").attr("x2", "100%")
-    .attr("y1", "0%").attr("y2", "0%");
-gradient.selectAll("stop")
-    .data([{ offset: "0%", color: "#f8f7f7" }, { offset: "100%", color: "#3d189d" }])
-    .enter().append("stop")
-    .attr("offset", d => d.offset)
-    .attr("stop-color", d => d.color);
-
-const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
-const jaccardIndices = {};
-Object.entries(jaccard_indices).forEach(([key, value]) => {
-    const [prot1, prot2] = key.split(', ');
-    const cleanKey1 = `${prot1.replace(/['"()]/g, '')}-${prot2.replace(/['"()]/g, '')}`;
-    const cleanKey2 = `${prot2.replace(/['"()]/g, '')}-${prot1.replace(/['"()]/g, '')}`;
-    jaccardIndices[cleanKey1] = value;
-    jaccardIndices[cleanKey2] = value;
-});
-proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
-
-let minColor = document.getElementById("min-color").value="#f8f7f7";
-let maxColor = document.getElementById("max-color").value="#3d189d";
-let colorScale = d3.scaleLinear().domain([0, 1]).range([minColor, maxColor]);
-
-function updateLegendGradient() {
-    heatmapSvg.select("defs #legend-gradient").selectAll("stop")
-        .data([
-            { offset: "0%", color: minColor },
-            { offset: "100%", color: maxColor }
-        ])
-        .join("stop")
-        .attr("offset", d => d.offset)
-        .attr("stop-color", d => d.color);
-}
-function drawHeatmap() {
-    heatmapG.selectAll("*").remove();
+            
+                <div style="flex: 1; min-width: 400px; max-width: 600px;">
+                    <!-- NUEVO BLOQUE combinado en una sola fila -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <label for="min-color">Min Color:</label>
+                    <input type="color" id="min-color" value="#f8f7f7" style="max-width: 50px;">
+            
+                    <label for="max-color">Max Color:</label>
+                    <input type="color" id="max-color" value="#3d189d" style="max-width: 50px;">
+            
+                    <label for="heatmap-style">Heatmap style:</label>
+                    <select id="heatmap-style" style="max-width: 90px;">
+                        <option value="square" selected>Square</option>
+                        <option value="circle">Circle</option>
+                    </select>
+                    </div>
+            
+                    <!-- Checkboxes -->
+                    <div style="margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+                    <label style="display: flex; align-items: center; white-space: nowrap; gap: 8px;">
+                        <input type="checkbox" id="show-values" checked>
+                        <span>Show Jaccard values</span>
+                        <input type="checkbox" id="upper-triangle-only">
+                        <span>Show only upper triangle</span>
+                        <input type="checkbox" id="toggle-legend" checked>
+                        <span>Show color legend</span>
+                    </label>
+                    </div>
+                </div>
+                </div>
+            
+                <!-- Botones de descarga -->
+                <div style="display: flex; justify-content: center; width: 100%; margin-top: 30px; gap: 40px;">
+                <div style="flex: 1; display: flex; justify-content: center;">
+                    <a id="download-heatmap" class="btn btn-primary" style="max-width: 300px; width: 100%;">Download Heatmap (PNG)</a>
+                </div>
+                <div style="flex: 1; display: flex; justify-content: center;">
+                    <a id="download-csv" class="btn btn-primary" style="max-width: 300px; width: 100%;">Download Table (CSV)</a>
+                </div>
+                </div>
+            </div>
+  
+      
+          <!-- Pork -->
+            <div id="uniprot-links"
+            style="font-family: 'M PLUS 2 Variable', sans-serif;
+                grid-column: span 1;
+                grid-row: span 2;
+                background-color: #fcfcfc;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                overflow-y: auto;">
+            <h2 style="margin-bottom: 10px;">UniProt</h2>
+            <p style="margin-bottom: 20px;">Click on a protein to view its UniProt entry.</p>
+            <ul id="uniprot-list" style="padding-left: 0; list-style: none; text-align: center;"></ul>
+            </div>
+      
+          <!-- Edamame -->
+          <div style="font-family: 'M PLUS 2 Variable', sans-serif; grid-column: span 4; grid-row: span 3; background-color: #fcfcfc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px;">
+            <h2 style="margin-bottom: 10px;">Clustal alignment</h2>
+            <div style="overflow-x: auto; border: 1px solid #ccc; width: 100%; max-height: 500px;">
+                <svg id="alignment-svg" width="100%" height="500"></svg>
+            </div>
+      
+            <div class="ptm-tooltip"></div>
+      
+            <div id="ptm-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:1px solid #fcfcfc; padding:20px; z-index:2000; border-radius:10px; max-width:500px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+              <span id="close-ptm-modal" style="float:right; cursor:pointer; font-weight:bold;">&times;</span>
+              <div id="ptm-modal-content"></div>
+            </div>
+      
+            <div style="margin: 40px auto; text-align: center;">
+              <a href="/download_fasta" class="btn btn-primary">Download Clustal Alignment</a>
+            </div>
+          </div>
+      
+        </div>
+      </div>
+  
+  
     
-    const fontSizeScale = Math.max(16, Math.min(18, 600 / proteinIds.length));    const showValues = document.getElementById("show-values").checked;
-    const upperOnly = document.getElementById("upper-triangle-only").checked;
-    const heatmapStyle = document.getElementById("heatmap-style").value; // 👈 nuevo
+    <!-- Clustal alignment visualization-->
+    <script>
 
-    proteinIds.forEach((row, i) => {
-        proteinIds.forEach((col, j) => {
-            if (upperOnly && j < i) return;
+    // Fetch PTM and sequence alignment data from Flask
+    const sequences = JSON.parse('{{ sequences | tojson | safe }}');
+    const ptmData = JSON.parse('{{ ptm_data | tojson | safe }}');
 
-            const key = `${row}-${col}`;
-            const value = jaccardIndices[key] || 0;
+    const svg = d3.select("#alignment-svg");
+    const margin = { top: 50, right: 20, bottom: 50, left: 150 };
+    const numProteins = Object.keys(sequences).length;
+    const maxSeqLength = Math.max(...Object.values(sequences).map(seq => seq.length));
+    const baseWidth = 800;
+    const width = Math.max(baseWidth, maxSeqLength * 12);  // Adjust width for sequence length
+    const height = numProteins * 80 + margin.top + margin.bottom;  // Increased height for PTMs
 
-            if (heatmapStyle === "square") {
-                // 🔷 Estilo cuadrado
-                heatmapG.append("rect")
-                    .attr("x", j * cellSize)
-                    .attr("y", i * cellSize)
-                    .attr("width", cellSize)
-                    .attr("height", cellSize)
-                    .attr("fill", colorScale(value))
-                    .on("mouseover", function (event) {
-                        heatmapTooltip.style("display", "block")
-                            .style("left", (event.pageX + 10) + "px")
-                            .style("top", (event.pageY - 10) + "px")
-                            .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
-                                   <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
-                    })
-                    .on("mouseout", function () {
-                        heatmapTooltip.style("display", "none");
-                    });
-            } else if (heatmapStyle === "circle") {
-                // ⚪ Estilo circular
-                heatmapG.append("circle")
-                    .attr("cx", j * cellSize + cellSize / 2)
-                    .attr("cy", i * cellSize + cellSize / 2)
-                    .attr("r", (cellSize / 2) * value) // radio proporcional al índice
-                    .attr("fill", colorScale(value))
-                    .on("mouseover", function (event) {
-                        heatmapTooltip.style("display", "block")
-                            .style("left", (event.pageX + 10) + "px")
-                            .style("top", (event.pageY - 10) + "px")
-                            .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
-                                   <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
-                    })
-                    .on("mouseout", function () {
-                        heatmapTooltip.style("display", "none");
-                    });
-            }
+    svg.attr("width", width + margin.left + margin.right);
+    svg.attr("height", height);
 
-            if (showValues) {
-                heatmapG.append("text")
-                    .attr("x", j * cellSize + cellSize / 2)
-                    .attr("y", i * cellSize + cellSize / 2 + 4)
-                    .attr("text-anchor", "middle")
-                    .attr("font-size", "14px")
-                    .attr("fill", "black")
-                    .text(value.toFixed(2));
-            }
-        });
-    });
+    // Y-scale for protein alignment rows
+    const yScale = d3.scaleBand()
+        .domain(Object.keys(sequences))
+        .range([margin.top, height])
+        .padding(0.5);
 
-    // Etiquetas
-
-   // Eliminar etiquetas anteriores
-    heatmapG.selectAll(".row-label").remove();
-
-    // Crear nuevas etiquetas con el fontSize actualizado
-    heatmapG.selectAll(".row-label")
-        .data(proteinIds)
+    // Add protein labels on the left
+    svg.selectAll(".protein-label")
+        .data(Object.keys(sequences))
         .enter().append("text")
-        .attr("class", "row-label")
-        .attr("x", d => upperOnly ? proteinIds.length * cellSize + 5 : -5)
-        .attr("y", (d, i) => i * cellSize + cellSize / 2)
-        .attr("text-anchor", d => upperOnly ? "start" : "end")
-        .attr("alignment-baseline", "middle")
+        .attr("class", "protein-label")
+        .attr("x", margin.left - 10)
+        .attr("y", d => yScale(d))
+        .attr("text-anchor", "end")
         .attr("font-weight", "bold")
         .attr("fill", "#5f585a")
-        .attr("font-size", fontSizeScale + "px")  // ✅ Aquí se aplica el tamaño
         .text(d => d);
 
+    const aminoAcidColors = {
+        // Alifáticos (hidrofóbicos)
+        "A": "#3CB371",  // MediumSeaGreen
+        "V": "#2E8B57",  // SeaGreen
+        "L": "#228B22",  // ForestGreen
+        "I": "#006400",  // DarkGreen
+        "M": "#00A86B",  // Jade
+
+        // Aromáticos
+        "F": "#4169E1",  // RoyalBlue
+        "Y": "#6A5ACD",  // SlateBlue
+        "W": "#483D8B",  // DarkSlateBlue
+
+        // Básicos (positivos)
+        "K": "#FF4500",  // OrangeRed
+        "R": "#DC143C",  // Crimson
+        "H": "#C71585",  // MediumVioletRed
+
+        // Ácidos (negativos)
+        "D": "#8A2BE2",  // BlueViolet
+        "E": "#800080",  // Purple
+
+        // Polares sin carga
+        "S": "#FFD700",  // Gold
+        "T": "#FFA500",  // Orange
+        "N": "#FF69B4",  // HotPink
+        "Q": "#FF1493",  // DeepPink
+
+        // Azufrados, especiales
+        "C": "#DAA520",  // GoldenRod
+        "G": "#A9A9A9",  // DarkGray
+        "P": "#CD853F",  // Peru
+
+        // Gap
+        "-": "#000000"   // Black
+    };
 
 
-            
-
-        // Eliminar etiquetas anteriores
-        heatmapG.selectAll(".col-label").remove();
-
-        // Crear nuevas etiquetas con el fontSize actualizado
-        heatmapG.selectAll(".col-label")
-            .data(proteinIds)
+    // Display aligned sequences as text
+    Object.entries(sequences).forEach(([proteinId, sequence]) => {
+        svg.selectAll(`.seq-${proteinId}`)
+            .data(sequence.split(""))
             .enter().append("text")
-            .attr("class", "col-label")
-            .attr("x", (d, i) => i * cellSize + cellSize / 2)
-            .attr("y", -5)
-            .attr("text-anchor", "start")
-            .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
-            .attr("font-weight", "bold")
-            .attr("fill", "#5f585a")
-            .attr("font-size", fontSizeScale + "px")  // ✅ APLICADO AQUÍ CORRECTAMENTE
-            .text(d => d);
+            .attr("class", "sequence")
+            .attr("x", (d, i) => margin.left + i * 12)  
+            .attr("y", yScale(proteinId) )
+            .attr("text-anchor", "middle")
+            .text(d => d)
+            .attr("font-family", "Courier")
+            .attr("font-weight", "bold") 
+            .attr("fill", d => aminoAcidColors[d] || "black"); // Gaps in gray
+    });
 
+    // PTM color coding
 
-  
+    // Convert PTM name to a consistent HSL color using hash
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        return `hsl(${hue}, 100%, 50%)`;  // vibrant consistent color
+    }
 
-
-    // Leyenda
-    
-
-    const legendWidth = 200, legendHeight = 20;
-    const legendX = (proteinIds.length * cellSize - legendWidth) / 2;
-    heatmapSvg.select("#color-legend").remove();
-    const legend = heatmapSvg.append("g")
-        .attr("id", "color-legend")
-        .attr("transform", `translate(${heatmapMargin.left + legendX},${heatmapMargin.top + proteinIds.length * cellSize + 40})`);
-
-    const showLegend = document.getElementById("toggle-legend")?.checked ?? true;
-    legend.style("display", showLegend ? "block" : "none");
-    
-    legend.append("rect")
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .style("fill", "url(#legend-gradient)")
-        .style("stroke", "black");
-
-    legend.append("text")
-        .attr("x", 0)
-        .attr("y", -5)
-        .text("Jaccard Index")
-        .attr("font-weight", "bold")
-        .attr("fill", "#5f585a")
-
-    legend.append("text")
-        .attr("x", 0)
-        .attr("y", legendHeight + 15)
-        .text("0.0");
-
-    legend.append("text")
-        .attr("x", legendWidth)
-        .attr("y", legendHeight + 15)
-        .attr("text-anchor", "end")
-        .text("1.0");
-}
-
-
-
-document.getElementById("min-color").addEventListener("input", function() {
-    minColor = this.value;
-    colorScale.range([minColor, maxColor]);
-    updateLegendGradient();
-    drawHeatmap();
-});
-
-document.getElementById("max-color").addEventListener("input", function() {
-    maxColor = this.value;
-    colorScale.range([minColor, maxColor]);
-    updateLegendGradient();
-    drawHeatmap();
-});
-
-document.getElementById("show-values").addEventListener("change", drawHeatmap);
-document.getElementById("upper-triangle-only").addEventListener("change", drawHeatmap);
-document.getElementById("heatmap-style").addEventListener("change", drawHeatmap);
-document.getElementById("toggle-legend").addEventListener("change", drawHeatmap);
-
-drawHeatmap();
-</script>
-
-<script>
-// CSV download
-document.getElementById("download-csv").addEventListener("click", function() {
-    let csvContent = "Protein 1\tProtein 2\tJaccard Index\n";
-    const seenPairs = new Set();
-    proteinIds.forEach((row, i) => {
-        proteinIds.forEach((col, j) => {
-            if (i <= j) {
-                const key = `${row}-${col}`;
-                const jaccardValue = jaccardIndices[key] || 0.0;
-                if (!seenPairs.has(`${col}-${row}`)) {
-                    csvContent += `${row}\t${col}\t${jaccardValue.toFixed(3)}\n`;
-                    seenPairs.add(key);
-                }
+    // Build list of unique PTM types from your data
+    const ptmTypes = new Set();
+    Object.values(ptmData).forEach(ptms => {
+        Object.values(ptms).forEach(ptm => {
+            if (ptm.type) {
+                ptmTypes.add(ptm.type);
             }
         });
     });
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "jaccard_indices.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-});
-</script>
 
-<script>
-// PNG download
-document.getElementById("download-heatmap").addEventListener("click", function() {
-    const svgElement = document.getElementById("heatmap");
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement);
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    const img = new Image();
-    const scaleFactor = 2;
+    // Assign each PTM type a consistent color
+    const ptmColors = {};
+    ptmTypes.forEach(type => {
+        ptmColors[type] = stringToColor(type);
+    });
 
-    img.onload = function () {
-        canvas.width = svgElement.clientWidth * scaleFactor;
-        canvas.height = svgElement.clientHeight * scaleFactor;
-        context.fillStyle = "white";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const pngUrl = canvas.toDataURL("image/png");
+    // Fallback color
+    ptmColors["Other"] = "#444";
+
+    const arrowPath = "M0 0-5.2-5.2-5.2-16.9 0-11.7 5.2-16.9 5.2-5.2 0 0";
+
+    const animationDistance = 5; // Distance to move up and down
+    const animationDuration = 800; // Duration of the animation in milliseconds
+
+
+    const ptmTooltip = d3.select(".ptm-tooltip");
+
+    const bounce = (selection, d, yBase) => {
+        const x = margin.left + (d[1].new_position / maxSeqLength) * width;
+
+        selection.transition()
+            .duration(animationDuration)
+            .ease(d3.easeSinInOut)
+            .attr("transform", `translate(${x}, ${yBase + animationDistance})`)
+            .transition()
+            .duration(animationDuration)
+            .ease(d3.easeSinInOut)
+            .attr("transform", `translate(${x}, ${yBase - animationDistance})`)
+            .transition()
+            .duration(animationDuration)
+            .ease(d3.easeSinInOut)
+            .attr("transform", `translate(${x}, ${yBase})`)
+            .on("end", () => {
+                setTimeout(() => bounce(selection, d, yBase), 10); // pequeño delay opcional
+            });
+    };
+
+
+
+    // Adjust PTM positions based on alignment gaps
+    Object.entries(ptmData).forEach(([proteinId, ptms]) => {
+        if (!ptms || Object.keys(ptms).length === 0) return;
+
+        let alignedSequence = sequences[proteinId].split("");
+        let ungappedPosition = 0;
+        let ptmPositions = {};
+
+        // Map original PTM positions to new aligned positions
+        alignedSequence.forEach((char, alignedIndex) => {
+            if (char !== "-") {
+                ungappedPosition++;
+            }
+            ptmPositions[ungappedPosition] = alignedIndex;  // Store new mapped position
+        });
+
+    // Draw PTM markers at the correct positions (above the sequence)
+    const ptmArrows = svg.selectAll(`.ptm-${proteinId}`)
+        .data(Object.entries(ptms))
+        .enter().append("path")
+        .attr("class", "ptm")
+        .attr("d", arrowPath)
+        .attr("transform", d => `translate(${margin.left + (d[1].new_position / maxSeqLength) * width}, ${yScale(proteinId) - 20})`)
+        .attr("fill", d => ptmColors[d[1].type] || "black")
+        .attr("stroke", "none")
+        .attr("stroke-width", "0px")
+        .on("mouseover", function(event, d) {
+            const ptmType = d[1].type;
+            ptmTooltip.style("display", "block")
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px")
+                .html(`
+                    <div class="ptm-tooltip-title">PTM Details for ${proteinId}</div>
+                    <div class="ptm-tooltip-content">
+                        <strong>Type:</strong> <span class="ptm-info-link" style="color:blue; text-decoration:underline; cursor:pointer;" data-ptm="${ptmType}">${ptmType}</span><br>
+                        <strong>Original Position:</strong> ${d[1].original_position}<br>
+                        <strong>New Position:</strong> ${d[1].new_position}
+                    </div>
+                `);
+        })
+        .on("mouseout", function() {
+            setTimeout(() => {
+                if (!ptmTooltip.node().matches(':hover')) {
+                    ptmTooltip.style("display", "none");
+                }
+            }, 200);
+        });
+
+    // Llama a bounce para cada flecha
+    ptmArrows.each(function(d) {
+        const yBase = yScale(proteinId) - 20;  // usa mismo offset que en .attr("transform")
+        bounce(d3.select(this), d, yBase);
+    });
+
+
+
+    // Evitar que el tooltip desaparezca si el cursor está sobre él
+    ptmTooltip.on("mouseover", function() {
+        ptmTooltip.style("display", "block");
+    }).on("mouseout", function() {
+        ptmTooltip.style("display", "none");
+    });
+
+    // Dictionary with textual information about each PTM
+    const ptmDescriptions = {
+        "phospho": "Phosphorylation involves the addition of a phosphate group, typically to serine, threonine, or tyrosine residues. It is a key regulatory mechanism in signaling pathways, enzyme activity, and protein interactions.",
+        "n6-acetyl": "N6-acetylation modifies the ε-amino group of lysine residues by adding an acetyl group. It is crucial in chromatin remodeling, transcriptional regulation, and protein stability.",
+        "omega-n-methyl": "Omega-N-methylation refers to the methylation of terminal nitrogen atoms on lysine or arginine side chains. It modulates protein-protein interactions and affects chromatin structure and signaling.",
+        "asymmetric dimethyl": "Asymmetric dimethylation involves adding two methyl groups to the same terminal nitrogen of an arginine residue. It affects RNA processing and transcriptional regulation.",
+        "n-acetyl": "N-acetylation is the covalent attachment of an acetyl group to the N-terminal residue of a protein. It influences protein lifespan, folding, localization, and interaction networks.",
+        "n5-methyl": "N5-methylation involves methylation of nitrogen at position 5 of glutamine or arginine. It's associated with enzyme regulation and gene expression.",
+        "5-glutamyl polyglutamate": "Polyglutamylation consists of attaching several glutamate residues to the γ-carboxyl group of glutamate side chains, notably in tubulin, affecting stability and interactions.",
+        "n6-succinyl": "N6-succinylation adds a succinyl group to lysine residues, introducing a negative charge. It influences metabolism, chromatin structure, and mitochondrial protein regulation.",
+        "persulfide": "Persulfidation forms a persulfide (-SSH) group on cysteine residues. It is involved in antioxidant defense and redox-based signal transduction.",
+        "methyl ester": "Methyl esterification adds a methyl group to carboxylic acid side chains like glutamate or aspartate. It can affect electrostatics and reactivity.",
+        "(3r)-3-hydroxy": "3R-3-hydroxylation introduces a hydroxyl group in the R-configuration on side chains, impacting local folding and hydrogen bonding.",
+        "n6-methyl": "N6-methylation involves methylating the ε-amino group of lysine, frequently in histones, and plays a role in epigenetic regulation.",
+        "n6-carboxy": "N6-carboxylation introduces a carboxylic acid group to lysine residues, potentially altering protein charge and binding capacity.",
+        "citrulline": "Citrullination converts arginine into citrulline through deimination. It modulates immune response and is involved in autoimmune diseases.",
+        "symmetric dimethyl": "Symmetric dimethylation adds one methyl group to each nitrogen of the guanidino group of arginine. It impacts RNA binding and gene expression.",
+        "n6-(2-hydroxyisobutyryl)": "This modification adds a hydroxyisobutyryl group to lysine and is associated with metabolic state-dependent transcriptional regulation.",
+        "n6-(beta-hydroxybutyryl)": "N6-β-hydroxybutyrylation links lysine residues to ketone metabolism and is induced during fasting or ketogenic conditions.",
+        "n6-lactoyl": "N6-lactoylation links lactate-derived moieties to lysine residues and has been connected to metabolic regulation of gene expression.",
+        "n6-crotonyl": "Crotonylation is the addition of a crotonyl group to lysine, marking active gene transcription in chromatin.",
+        "n6-glutaryl": "Glutarylation is a negatively charged acylation on lysine linked to mitochondrial and metabolic regulation.",
+        "4-hydroxy": "4-Hydroxylation modifies proline and lysine residues, especially in collagen, and contributes to structural protein stability.",
+        "(3s)-3-hydroxy": "3S-3-hydroxylation introduces a hydroxyl group in the S-configuration on certain amino acid residues, influencing polarity and reactivity.",
+        "amide": "Amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-nitroso": "S-nitroso is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-biotinyl": "N6-biotinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "diphospho": "Diphosphorylation adds two phosphate groups to residues like serine, threonine, or tyrosine, often as part of kinase cascades or protein activation.",
+        "n6-methylated": "N6-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "pros-methyl": "Pros-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-glutathionyl": "S-glutathionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6,n6-dimethyl": "N6,n6-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-lipoyl": "N6-lipoyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "pyrrolidone carboxylic acid": "Pyrrolidone carboxylic acid is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "dimethylated": "Dimethylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6,n6,n6-trimethyl": "N6,n6,n6-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "iodo": "Iodo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "sulfo": "Sulfation is the addition of a sulfate group to tyrosine or carbohydrate moieties, often modulating receptor-ligand binding or extracellular signaling.",
+        "thyroxine": "Thyroxine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "triiodothyronine": "Triiodothyronine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "diiodo": "Diiodination involves adding two iodine atoms to tyrosine residues. It is a precursor to thyroid hormones like T3 and T4.",
+        "deamidated": "Deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "o-(pantetheine 4'-phosphoryl)": "O-(pantetheine 4'-phosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "4-carboxyglutamate": "4-carboxyglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) o-acetyl": "(microbial infection) o-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "hydroxy": "Hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "phenyl amide": "Phenyl amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-(pyridoxal phosphate)": "N6-(pyridoxal phosphate) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "sulfonic acid (-so3h)": "Sulfonic acid (-so3h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "sulfenic acid (-soh)": "Sulfenic acid (-soh) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(3r)-3-hydroxyaspartate": "(3r)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n,n,n-trimethyl": "N,n,n-trimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-(retinylidene)": "N6-(retinylidene) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "3'-nitro": "3'-nitro is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "adp-ribosyl": "Adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-(2-succinyl)": "S-(2-succinyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-(adp-ribosyl)": "N6-(adp-ribosyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-butyryl": "N6-butyryl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "polyadp-ribosyl": "Polyadp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-malonyl": "N6-malonyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "2',4',5'-topaquinone": "2',4',5'-topaquinone is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) phospho": "(microbial infection) phospho is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-hydroxy": "5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "3-hydroxy": "3-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-methyl": "S-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "tele-methyl": "Tele-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) deamidated": "(microbial infection) deamidated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "1-thio": "1-thio is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "glycyl adenylate": "Glycyl adenylate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "blocked amino end (ser)": "Blocked amino end (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-cysteinyl": "S-cysteinyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "beta-decarboxylated aspartate": "Beta-decarboxylated aspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "1-amide": "1-amide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "al": "Al is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl dopamine": "5-glutamyl dopamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl serotonin": "5-glutamyl serotonin is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "sulfoxide": "Sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n,n-dimethyl": "N,n-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "blocked amino end (thr)": "Blocked amino end (thr) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n-methyl": "N-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl": "5-glutamyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "3'-bromo": "3'-bromo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-(dipyrrolylmethanemethyl)": "S-(dipyrrolylmethanemethyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "omega-n-methylated": "Omega-n-methylated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "3-oxo (cys)": "3-oxo (cys) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl histamine": "5-glutamyl histamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) adp-ribosyl": "(microbial infection) adp-ribosyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n4,n4-dimethyl": "N4,n4-dimethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl glycerylphosphorylethanolamine": "5-glutamyl glycerylphosphorylethanolamine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "o-amp-": "O-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) adp-ribosyldiphthamide": "(microbial infection) adp-ribosyldiphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "diphthamide": "Diphthamide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-1-carboxyethyl": "N6-1-carboxyethyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(3s)-3-hydroxyaspartate": "(3s)-3-hydroxyaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "pyruvic acid (ser)": "Pyruvic acid (ser) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "sulfinic acid (-so2h)": "Sulfinic acid (-so2h) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-(2,3-dicarboxypropyl)": "S-(2,3-dicarboxypropyl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "aspartate 1-(chondroitin 4-sulfate)-ester": "Aspartate 1-(chondroitin 4-sulfate)-ester is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-8alpha-fad": "S-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "blocked amino end (gln)": "Blocked amino end (gln) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl poly": "5-glutamyl poly is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "tele-8alpha-fad": "Tele-8alpha-fad is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "o-acetyl": "O-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) adp-riboxanated": "(microbial infection) adp-riboxanated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n-acetylaspartate": "N-acetylaspartate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(r)-sulfoxide": "(r)-sulfoxide is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) o-amp-": "(microbial infection) o-amp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n-acetylglutamate": "N-acetylglutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-acetyl-n6-methyl": "N6-acetyl-n6-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n6-propionyl": "N6-propionyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) o-(2-cholinephosphoryl)": "(microbial infection) o-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "hypusine": "Hypusine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n-pyruvate 2-iminyl-": "N-pyruvate 2-iminyl- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "s-cgmp-": "S-cgmp- is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "o-(2-cholinephosphoryl)": "O-(2-cholinephosphoryl) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) s-methyl": "(microbial infection) s-methyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "5-glutamyl glutamate": "5-glutamyl glutamate is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(4r)-5-hydroxy": "(4r)-5-hydroxy is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(4r)-5-oxo": "(4r)-5-oxo is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "thiazolidine linkage to a ring-opened dna abasic site": "Thiazolidine linkage to a ring-opened dna abasic site is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "n-acetylthreonine": "N-acetylthreonine is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "pyrrolidone carboxylic acid (glu)": "Pyrrolidone carboxylic acid (glu) is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "(microbial infection) n6-acetyl": "(microbial infection) n6-acetyl is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "4-hydroxynonenal-conjugated": "4-hydroxynonenal-conjugated is a post-translational modification with a functional role in protein biology. It may influence localization, interaction, or stability depending on context.",
+        "Other": "Unclassified post-translational modification. Please consult specialized databases for more details."
+    };
+
+    // Listen for clicks on any element with the class .ptm-info-link
+    document.addEventListener("click", function(e) {
+        if (e.target.classList.contains("ptm-info-link")) {
+            const ptmType = e.target.getAttribute("data-ptm");
+            const description = ptmDescriptions[ptmType] || "No description available for this PTM type.";
+            document.getElementById("ptm-modal-content").innerHTML = `<h3>${ptmType}</h3><p>${description}</p>`;
+            document.getElementById("ptm-modal").style.display = "block";
+        }
+    });
+
+    // Close the modal when the close button is clicked
+    document.getElementById("close-ptm-modal").addEventListener("click", function() {
+        document.getElementById("ptm-modal").style.display = "none";
+    });
+
+
+    });
+
+    </script>
+
+
+
+    <!--Jaccard heatmap-->
+
+    <script>
+        const heatmapTooltip = d3.select(".heatmap-tooltip");
+        const heatmapSvg = d3.select("#heatmap");
+
+        const heatmapMargin = { top: 75, right: 50, bottom: 100, left: 75 };
+        const proteinIds = Object.keys(sequences);
+
+        // Tamaño de cada celda
+        const cellSize = 50;
+
+        // Calcular tamaño del heatmap
+        const heatmapWidth = proteinIds.length * cellSize;
+        const heatmapHeight = proteinIds.length * cellSize;
+
+        // Ajustar el tamaño del SVG automáticamente
+        heatmapSvg
+            .attr("width", heatmapWidth + heatmapMargin.left + heatmapMargin.right)
+            .attr("height", heatmapHeight + heatmapMargin.top + heatmapMargin.bottom);
+
+        function calculateHeatmapTransform() {
+            const upperOnly = document.getElementById("upper-triangle-only").checked;
+            const xOffset = upperOnly ? heatmapMargin.left - 50 : heatmapMargin.left;
+            return `translate(${xOffset},${heatmapMargin.top})`;
+        }
+
+        let heatmapG = heatmapSvg.append("g")
+            .attr("transform", calculateHeatmapTransform());
+
+
+        // Gradiente para la leyenda
+        const defs = heatmapSvg.append("defs");
+        const gradient = defs.append("linearGradient")
+            .attr("id", "legend-gradient")
+            .attr("x1", "0%").attr("x2", "100%")
+            .attr("y1", "0%").attr("y2", "0%");
+        gradient.selectAll("stop")
+            .data([{ offset: "0%", color: "#f8f7f7" }, { offset: "100%", color: "#3d189d" }])
+            .enter().append("stop")
+            .attr("offset", d => d.offset)
+            .attr("stop-color", d => d.color);
+
+        // Índices Jaccard
+        const jaccard_indices = JSON.parse('{{ jaccard_indices | tojson | safe }}');
+        const jaccardIndices = {};
+        Object.entries(jaccard_indices).forEach(([key, value]) => {
+            const [prot1, prot2] = key.split(', ');
+            const cleanKey1 = `${prot1.replace(/['"()]/g, '')}-${prot2.replace(/['"()]/g, '')}`;
+            const cleanKey2 = `${prot2.replace(/['"()]/g, '')}-${prot1.replace(/['"()]/g, '')}`;
+            jaccardIndices[cleanKey1] = value;
+            jaccardIndices[cleanKey2] = value;
+        });
+        proteinIds.forEach(id => jaccardIndices[`${id}-${id}`] = 1);
+
+        // Colores
+        let minColor = document.getElementById("min-color").value = "#f8f7f7";
+        let maxColor = document.getElementById("max-color").value = "#3d189d";
+        let colorScale = d3.scaleLinear().domain([0, 1]).range([minColor, maxColor]);
+
+        function updateLegendGradient() {
+            heatmapSvg.select("defs #legend-gradient").selectAll("stop")
+                .data([
+                    { offset: "0%", color: minColor },
+                    { offset: "100%", color: maxColor }
+                ])
+                .join("stop")
+                .attr("offset", d => d.offset)
+                .attr("stop-color", d => d.color);
+        }
+
+        function drawHeatmap() {
+            heatmapG.attr("transform", calculateHeatmapTransform());
+            heatmapG.selectAll("*").remove();
+
+            const showValues = document.getElementById("show-values").checked;
+            const upperOnly = document.getElementById("upper-triangle-only").checked;
+            const heatmapStyle = document.getElementById("heatmap-style").value;
+            const fontSizeScale = Math.max(12, Math.min(18, 600 / proteinIds.length));
+
+            proteinIds.forEach((row, i) => {
+                proteinIds.forEach((col, j) => {
+                    if (upperOnly && j < i) return;
+
+                    const key = `${row}-${col}`;
+                    const value = jaccardIndices[key] || 0;
+
+                    if (heatmapStyle === "square") {
+                        heatmapG.append("rect")
+                            .attr("x", j * cellSize)
+                            .attr("y", i * cellSize)
+                            .attr("width", cellSize)
+                            .attr("height", cellSize)
+                            .attr("fill", colorScale(value))
+                            .on("mouseover", function (event) {
+                                heatmapTooltip.style("display", "block")
+                                    .style("left", (event.pageX + 10) + "px")
+                                    .style("top", (event.pageY - 10) + "px")
+                                    .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                                        <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
+                            })
+                            .on("mouseout", () => heatmapTooltip.style("display", "none"));
+                    } else {
+                        heatmapG.append("circle")
+                            .attr("cx", j * cellSize + cellSize / 2)
+                            .attr("cy", i * cellSize + cellSize / 2)
+                            .attr("r", (cellSize / 2) * value)
+                            .attr("fill", colorScale(value))
+                            .on("mouseover", function (event) {
+                                heatmapTooltip.style("display", "block")
+                                    .style("left", (event.pageX + 10) + "px")
+                                    .style("top", (event.pageY - 10) + "px")
+                                    .html(`<div class="ptm-tooltip-title">${row} vs ${col}</div>
+                                        <div class="ptm-tooltip-content">Jaccard Index: ${value.toFixed(3)}</div>`);
+                            })
+                            .on("mouseout", () => heatmapTooltip.style("display", "none"));
+                    }
+
+                    if (showValues) {
+                        heatmapG.append("text")
+                            .attr("x", j * cellSize + cellSize / 2)
+                            .attr("y", i * cellSize + cellSize / 2 + 4)
+                            .attr("text-anchor", "middle")
+                            .attr("font-size", "14px")
+                            .attr("fill", "black")
+                            .text(value.toFixed(2));
+                    }
+                });
+            });
+
+            // Etiquetas fila
+            heatmapG.selectAll(".row-label").remove();
+            heatmapG.selectAll(".row-label")
+                .data(proteinIds)
+                .enter().append("text")
+                .attr("class", "row-label")
+                .attr("x", upperOnly ? proteinIds.length * cellSize + 5 : -5)
+                .attr("y", (d, i) => i * cellSize + cellSize / 2)
+                .attr("text-anchor", upperOnly ? "start" : "end")
+                .attr("alignment-baseline", "middle")
+                .attr("font-weight", "bold")
+                .attr("fill", "#5f585a")
+                .attr("font-size", fontSizeScale + "px")
+                .text(d => d);
+
+            // Etiquetas columna
+            heatmapG.selectAll(".col-label").remove();
+            heatmapG.selectAll(".col-label")
+                .data(proteinIds)
+                .enter().append("text")
+                .attr("class", "col-label")
+                .attr("x", (d, i) => i * cellSize + cellSize / 2)
+                .attr("y", -5)
+                .attr("text-anchor", "start")
+                .attr("transform", (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
+                .attr("font-weight", "bold")
+                .attr("fill", "#5f585a")
+                .attr("font-size", fontSizeScale + "px")
+                .text(d => d);
+
+            // Leyenda
+            const legendWidth = 150, legendHeight = 20;
+            const legendX = (proteinIds.length * cellSize - legendWidth) / 2;
+            heatmapSvg.select("#color-legend").remove();
+            const legend = heatmapSvg.append("g")
+                .attr("id", "color-legend")
+                .attr("transform", `translate(${heatmapMargin.left + legendX},${heatmapMargin.top + proteinIds.length * cellSize + 40})`);
+
+            const showLegend = document.getElementById("toggle-legend")?.checked ?? true;
+            legend.style("display", showLegend ? "block" : "none");
+
+            legend.append("rect")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .style("fill", "url(#legend-gradient)")
+                .style("stroke", "black");
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", -5)
+                .text("Jaccard Index")
+                .attr("font-weight", "bold")
+                .attr("fill", "#5f585a");
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", legendHeight + 15)
+                .text("0.0");
+
+            legend.append("text")
+                .attr("x", legendWidth)
+                .attr("y", legendHeight + 15)
+                .attr("text-anchor", "end")
+                .text("1.0");
+        }
+
+        // Eventos
+        document.getElementById("min-color").addEventListener("input", function () {
+            minColor = this.value;
+            colorScale.range([minColor, maxColor]);
+            updateLegendGradient();
+            drawHeatmap();
+        });
+
+        document.getElementById("max-color").addEventListener("input", function () {
+            maxColor = this.value;
+            colorScale.range([minColor, maxColor]);
+            updateLegendGradient();
+            drawHeatmap();
+        });
+
+        document.getElementById("show-values").addEventListener("change", drawHeatmap);
+        document.getElementById("upper-triangle-only").addEventListener("change", drawHeatmap);
+        document.getElementById("heatmap-style").addEventListener("change", drawHeatmap);
+        document.getElementById("toggle-legend").addEventListener("change", drawHeatmap);
+
+        // Inicial
+        drawHeatmap();
+    </script>
+
+
+    <script>
+    // CSV download
+    document.getElementById("download-csv").addEventListener("click", function() {
+        let csvContent = "Protein 1\tProtein 2\tJaccard Index\n";
+        const seenPairs = new Set();
+        proteinIds.forEach((row, i) => {
+            proteinIds.forEach((col, j) => {
+                if (i <= j) {
+                    const key = `${row}-${col}`;
+                    const jaccardValue = jaccardIndices[key] || 0.0;
+                    if (!seenPairs.has(`${col}-${row}`)) {
+                        csvContent += `${row}\t${col}\t${jaccardValue.toFixed(3)}\n`;
+                        seenPairs.add(key);
+                    }
+                }
+            });
+        });
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
-        link.href = pngUrl;
-        link.download = "jaccard_heatmap.png";
+        link.href = URL.createObjectURL(blob);
+        link.download = "jaccard_indices.csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
-
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-    img.src = url;
-});
-</script>
-
-
-<div  style="padding: 40px; margin: 0 60px;">
-    <div style="display: flex; flex-wrap: wrap; gap: 60px; justify-content: center; align-items: flex-start;">
-  
-        <!-- Árbol filogenético clásico -->
-        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-            <h1 style="margin-bottom: 20px;">Phylogenetic Tree</h1>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 15px;">
-                <label for="tree-style">Tree style:</label>
-                <select id="tree-style">
-                    <option value="rectangular">Rectangular</option>
-                    <option value="radial">Radial</option>
-                    <option value="circular">Circular</option>
-                </select>
-
-                <label for="branch-style">Branch style:</label>
-                <select id="branch-style">
-                    <option value="curve">Curved</option>
-                    <option value="line">Straight</option>
-                </select>
-
-                <label for="node-color">Node color:</label>
-                <input type="color" id="node-color" value="#4682B4">
-
-                <label for="branch-color">Branch color:</label>
-                <input type="color" id="branch-color" value="#4A90E2">
-
-                <label for="phylo-size">Tree size:</label>
-                <input type="range" id="phylo-size" min="400" max="2000" value="900">
-            </div>
-
-            <div id="tree-container-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%;">
-                <div id="tree-container" style="min-width: 900px;"></div>
-            </div>      
-
-            <div style="margin-top: 20px; text-align: center;">
-                <button id="download-tree" class="btn btn-primary">Download Phylogenetic Tree (PNG)</button>
-            </div>
-        </div>
-
-        <!-- Árbol basado en similitud de Jaccard -->
-        <div style="margin-top: 60px; flex: 1; min-width: 400px; max-width: 900px;">
-            <h1 style="margin-bottom: 20px;">Jaccard Similarity Tree</h1>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-                <label for="jaccard-tree-style">Tree style:</label>
-                <select id="jaccard-tree-style">
-                    <option value="rectangular">Rectangular</option>
-                    <option value="radial">Radial</option>
-                    <option value="circular">Circular</option>
-                </select>
-
-                <label for="jaccard-line-type">Branch style:</label>
-                <select id="jaccard-line-type">
-                    <option value="curved">Curved</option>
-                    <option value="straight">Straight</option>
-                </select>
-
-                <label for="jaccard-node-color">Node color:</label>
-                <input type="color" id="jaccard-node-color" value="#4682B4">
-
-                <label for="jaccard-link-color">Branch color:</label>
-                <input type="color" id="jaccard-link-color" value="#4A90E2">
-
-                <label for="jaccard-size">Tree size:</label>
-                <input type="range" id="jaccard-size" min="400" max="2000" value="900">
-            </div>
-
-            <div id="jaccard-tree-wrapper" style="overflow: auto; border: 1px solid #ccc; height: 600px; max-height: 1000px; width: 100%; margin-top: 15px;">
-                <svg id="jaccard-phylotree" width="900" height="600"></svg>
-            </div>
-                
-
-            <div style="margin-top: 20px; text-align: center;">
-                <button id="download-jaccard-png" class="btn btn-primary">Download Jaccard Similarity Tree (PNG)</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- SCRIPT: Árbol filogenético clásico -->
-<script>
-    var treeData = {{ tree_json | safe }};
-
-    function radialX(angle, radius) {
-        return radius * Math.cos(angle * Math.PI / 180);
-    }
-
-    function radialY(angle, radius) {
-        return radius * Math.sin(angle * Math.PI / 180);
-    }
-
-    function drawTree(style, nodeColor, branchColor, branchStyle, width = 900, height = 630) {
-        d3.select("#tree-container").html("");
-
-        const svg = d3.select("#tree-container")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
-
-        const g = svg.append("g")
-            .attr("transform", style === "rectangular"
-                ? `translate(20, 0)`
-                : `translate(${width / 2},${height / 2})`);
-
-        const root = d3.hierarchy(treeData);
-
-        let treeLayout = (style === "radial" || style === "circular")
-            ? d3.cluster().size([360, Math.min(width, height) / 2 - 100])
-            : d3.tree().size([height, width - 200]);
-
-        treeLayout(root);
-
-        const linkGenerator = branchStyle === "curve"
-            ? (style === "circular"
-                ? d3.linkRadial().angle(d => d.x * Math.PI / 180).radius(d => d.y)
-                : d3.linkHorizontal().x(d => d.y).y(d => d.x))
-            : null;
-
-        g.selectAll(".link")
-            .data(root.links())
-            .enter().append("path")
-            .attr("fill", "none")
-            .attr("stroke", branchColor)
-            .attr("stroke-width", 1.5)
-            .attr("d", d => {
-                if (branchStyle === "curve") {
-                    return linkGenerator(d);
-                } else if (style === "circular") {
-                    const sx = radialX(d.source.x, d.source.y);
-                    const sy = radialY(d.source.x, d.source.y);
-                    const tx = radialX(d.target.x, d.target.y);
-                    const ty = radialY(d.target.x, d.target.y);
-                    return `M${sx},${sy} L${tx},${ty}`;
-                } else {
-                    return `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
-                }
-            });
-
-        const node = g.selectAll(".node")
-            .data(root.descendants())
-            .enter().append("g")
-            .attr("transform", d => {
-                if (style === "circular") {
-                    const x = radialX(d.x, d.y);
-                    const y = radialY(d.x, d.y);
-                    return `translate(${x},${y})`;
-                } else {
-                    return `translate(${d.y},${d.x})`;
-                }
-            });
-
-        node.append("circle")
-            .attr("r", d => d.children ? 6 : 4)
-            .attr("fill", nodeColor)
-            .attr("stroke", "black")
-            .attr("stroke-width", 0.5);
-
-        node.append("text")
-            .attr("x", 12)
-            .attr("dy", ".35em")
-            .style("font-size", "13px")
-            .style("font-family", "Courier")
-            .text(d => d.data.name.includes("Inner") ? "" : d.data.name);
-    }
-
-    // Render inicial
-    drawTree("rectangular", "#4682B4", "#4A90E2", "curve");
-
-    // Interactividad
-    d3.selectAll("#tree-style, #branch-style, #node-color, #branch-color").on("change", () => {
-        const style = document.getElementById("tree-style").value;
-        const branchStyle = document.getElementById("branch-style").value;
-        const nodeColor = document.getElementById("node-color").value;
-        const branchColor = document.getElementById("branch-color").value;
-        const size = parseInt(document.getElementById("phylo-size").value);
-        drawTree(style, nodeColor, branchColor, branchStyle, size, size * 0.7);
     });
+    </script>
 
-    document.getElementById("phylo-size").addEventListener("input", () => {
-        const style = document.getElementById("tree-style").value;
-        const branchStyle = document.getElementById("branch-style").value;
-        const nodeColor = document.getElementById("node-color").value;
-        const branchColor = document.getElementById("branch-color").value;
-        const size = parseInt(document.getElementById("phylo-size").value);
-        drawTree(style, nodeColor, branchColor, branchStyle, size, size * 0.7);
-    });
-
-    document.getElementById("download-tree").addEventListener("click", function () {
-        const svgElement = document.querySelector("#tree-container svg");
+    <script>
+    // PNG download
+    document.getElementById("download-heatmap").addEventListener("click", function() {
+        const svgElement = document.getElementById("heatmap");
         const serializer = new XMLSerializer();
         const svgString = serializer.serializeToString(svgElement);
-        const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
         const img = new Image();
+        const scaleFactor = 2;
 
         img.onload = function () {
-            canvas.width = svgElement.clientWidth * 2;
-            canvas.height = svgElement.clientHeight * 2;
+            canvas.width = svgElement.clientWidth * scaleFactor;
+            canvas.height = svgElement.clientHeight * scaleFactor;
             context.fillStyle = "white";
             context.fillRect(0, 0, canvas.width, canvas.height);
             context.drawImage(img, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(url);
-
             const pngUrl = canvas.toDataURL("image/png");
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl;
-            downloadLink.download = "phylogenetic_tree.png";
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
+            const link = document.createElement("a");
+            link.href = pngUrl;
+            link.download = "jaccard_heatmap.png";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
 
-        img.src = url;
-    });
-</script>
-
-
-<script>
-    function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'curved', width = 900, height = 600) {
-        const svg = d3.select("#jaccard-phylotree");
-        svg.selectAll("*").remove();
-        svg.attr("width", width).attr("height", height);
-
-        const margin = { top: 60, right: 150, bottom: 60, left: 150 };
-        const treeWidth = width - margin.left - margin.right;
-        const treeHeight = height - margin.top - margin.bottom;
-        const g = svg.append("g")
-            .attr("transform", style === "rectangular"
-                ? `translate(80, 50)`
-                : `translate(${width / 2},${height / 2})`);;
-
-
-        const distanceMatrix = [];
-        proteinIds.forEach((p1, i) => {
-            distanceMatrix[i] = [];
-            proteinIds.forEach((p2, j) => {
-                const key = `${p1}-${p2}`;
-                const jaccard = jaccardIndices[key] || 0;
-                distanceMatrix[i][j] = 1 - jaccard;
-            });
-        });
-
-        function upgma(distMatrix, labels) {
-            const n = distMatrix.length;
-            let clusters = labels.map((label, i) => ({ name: label, children: [], leaf: true, index: i, height: 0 }));
-            let current = distMatrix.map(row => row.slice());
-
-            for (let s = 0; s < n - 1; s++) {
-                let min = Infinity, i = -1, j = -1;
-                for (let a = 0; a < current.length; a++) {
-                    for (let b = a + 1; b < current[a].length; b++) {
-                        if (current[a][b] < min) {
-                            min = current[a][b]; i = a; j = b;
-                        }
-                    }
-                }
-                const c1 = clusters[i], c2 = clusters[j];
-                const merged = { name: `Node_${s}`, children: [c1, c2], leaf: false, height: min / 2 };
-                clusters = clusters.filter((_, k) => k !== i && k !== j);
-                clusters.push(merged);
-                const newRow = current.map((row, k) => (k !== i && k !== j) ? (row[i] + row[j]) / 2 : null).filter(v => v !== null);
-                current = current.filter((_, k) => k !== i && k !== j).map(row => row.filter((_, l) => l !== i && l !== j));
-                current.forEach((row, k) => row.push(newRow[k]));
-                newRow.push(0); current.push(newRow);
-            }
-
-            return clusters[0];
-        }
-
-        const root = d3.hierarchy(upgma(distanceMatrix, proteinIds));
-
-        let layout;
-        if (style === "radial") {
-            layout = d3.tree().size([2 * Math.PI, Math.min(treeWidth, treeHeight) / 2 - 100]);
-        } else if (style === "circular") {
-            layout = d3.cluster().size([360, Math.min(treeWidth, treeHeight) / 2 - 100]);
-        } else {
-            layout = d3.cluster().size([treeHeight, treeWidth]);
-        }
-
-        layout(root);
-
-        const radialX = (a, r) => r * Math.cos(a - Math.PI / 2);
-        const radialY = (a, r) => r * Math.sin(a - Math.PI / 2);
-
-        const links = g.selectAll(".link")
-            .data(root.links())
-            .enter().append("path")
-            .attr("class", "link")
-            .attr("fill", "none")
-            .attr("stroke", linkColor)
-            .attr("stroke-width", 2)
-            .attr("stroke-opacity", 0.8)
-            .attr("d", d => {
-                if (style === "radial" || style === "circular") {
-                    const sx = radialX(d.source.x, d.source.y);
-                    const sy = radialY(d.source.x, d.source.y);
-                    const tx = radialX(d.target.x, d.target.y);
-                    const ty = radialY(d.target.x, d.target.y);
-                    return lineType === 'curved'
-                        ? `M${sx},${sy} C${sx},${sy + 50} ${tx},${ty - 50} ${tx},${ty}`
-                        : `M${sx},${sy} L${tx},${ty}`;
-                } else {
-                    return lineType === 'curved'
-                        ? `M${d.source.y},${d.source.x} C${(d.source.y + d.target.y) / 2},${d.source.x} ${(d.source.y + d.target.y) / 2},${d.target.x} ${d.target.y},${d.target.x}`
-                        : `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
-                }
-            });
-
-        const nodes = g.selectAll(".node")
-            .data(root.descendants())
-            .enter().append("g")
-            .attr("class", "node")
-            .attr("transform", d => {
-                if (style === "radial" || style === "circular") {
-                    const x = radialX(d.x, d.y);
-                    const y = radialY(d.x, d.y);
-                    return `translate(${x},${y})`;
-                } else {
-                    return `translate(${d.y},${d.x})`;
-                }
-            });
-
-        nodes.append("circle")
-            .attr("r", d => d.children ? 6 : 4)
-            .attr("fill", nodeColor)
-            .attr("stroke", "black")
-            .attr("stroke-width", 0.5);
-
-        nodes.filter(d => !d.children)
-            .append("text")
-            .attr("x", 10)
-            .attr("dy", "0.31em")
-            .style("font-size", "13px")
-            .style("font-family", "Courier") 
-            .text(d => d.data.name);
-    }
-
-    renderJaccardTree();
-
-    ["jaccard-tree-style", "jaccard-node-color", "jaccard-link-color", "jaccard-line-type", "jaccard-size"].forEach(id => {
-        document.getElementById(id).addEventListener("input", () => {
-            const style = document.getElementById("jaccard-tree-style").value;
-            const nodeColor = document.getElementById("jaccard-node-color").value;
-            const linkColor = document.getElementById("jaccard-link-color").value;
-            const lineType = document.getElementById("jaccard-line-type").value;
-            const size = parseInt(document.getElementById("jaccard-size").value);
-            renderJaccardTree(style, nodeColor, linkColor, lineType, size, size * 0.7);
-        });
-    });
-
-    // PNG Download for Jaccard Tree
-
-    document.getElementById("download-jaccard-png").addEventListener("click", function() {
-        const svgElement = document.getElementById("jaccard-phylotree");
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgElement);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);
-
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        const img = new Image();
-
-        img.onload = function () {
-            canvas.width = svgElement.clientWidth * 2;
-            canvas.height = svgElement.clientHeight * 2;
-            context.fillStyle = "white";
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(img, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(url);
-
-            const pngUrl = canvas.toDataURL("image/png");
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl;
-            downloadLink.download = "jaccard_tree.png";
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        };
-
         img.src = url;
     });
     </script>
+
+    <!--Classic phylogenetic tree-->
+    <script>
+        var treeData = {{ tree_json | safe }};
+    
+        function radialX(angle, radius) {
+            return radius * Math.cos(angle * Math.PI / 180);
+        }
+    
+        function radialY(angle, radius) {
+            return radius * Math.sin(angle * Math.PI / 180);
+        }
+    
+        function enforceBranchStyleRules() {
+            const style = document.getElementById("tree-style").value;
+            const branchSelect = document.getElementById("branch-style");
+            const currentBranchStyle = branchSelect.value;
+    
+            if (style === "circular") {
+                // Desactiva "curve"
+                branchSelect.querySelector('option[value="curve"]').disabled = true;
+                // Si estaba seleccionada, forzar a "line"
+                if (currentBranchStyle === "curve") {
+                    branchSelect.value = "line";
+                }
+            } else {
+                // Activa "curve" si está desactivado
+                branchSelect.querySelector('option[value="curve"]').disabled = false;
+            }
+        }
+    
+        function drawTree(style, nodeColor, branchColor, branchStyle, width = 900, height = 630) {
+            d3.select("#tree-container").html("");
+    
+            const svg = d3.select("#tree-container")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+    
+            const g = svg.append("g")
+                .attr("transform", style === "rectangular"
+                    ? `translate(20, 0)`
+                    : `translate(${width / 2},${height / 2})`);
+    
+            const root = d3.hierarchy(treeData);
+    
+            let treeLayout = (style === "radial" || style === "circular")
+                ? d3.cluster().size([360, Math.min(width, height) / 2 - 100])
+                : d3.tree().size([height, width - 200]);
+    
+            treeLayout(root);
+    
+            const linkGenerator = branchStyle === "curve"
+                ? (style === "circular"
+                    ? d3.linkRadial().angle(d => d.x * Math.PI / 180).radius(d => d.y)
+                    : d3.linkHorizontal().x(d => d.y).y(d => d.x))
+                : null;
+    
+            g.selectAll(".link")
+                .data(root.links())
+                .enter().append("path")
+                .attr("fill", "none")
+                .attr("stroke", branchColor)
+                .attr("stroke-width", 1.5)
+                .attr("d", d => {
+                    if (branchStyle === "curve") {
+                        return linkGenerator(d);
+                    } else if (style === "circular") {
+                        const sx = radialX(d.source.x, d.source.y);
+                        const sy = radialY(d.source.x, d.source.y);
+                        const tx = radialX(d.target.x, d.target.y);
+                        const ty = radialY(d.target.x, d.target.y);
+                        return `M${sx},${sy} L${tx},${ty}`;
+                    } else {
+                        return `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
+                    }
+                });
+    
+            const node = g.selectAll(".node")
+                .data(root.descendants())
+                .enter().append("g")
+                .attr("transform", d => {
+                    if (style === "circular") {
+                        const x = radialX(d.x, d.y);
+                        const y = radialY(d.x, d.y);
+                        return `translate(${x},${y})`;
+                    } else {
+                        return `translate(${d.y},${d.x})`;
+                    }
+                });
+    
+            node.append("circle")
+                .attr("r", d => d.children ? 6 : 4)
+                .attr("fill", nodeColor)
+                .attr("stroke", "black")
+                .attr("stroke-width", 0.5);
+    
+            node.append("text")
+                .attr("x", 12)
+                .attr("dy", ".35em")
+                .style("font-size", "13px")
+                .style("font-family", "Courier")
+                .text(d => d.data.name.includes("Inner") ? "" : d.data.name);
+        }
+    
+        // Render inicial
+        drawTree("rectangular", "#4682B4", "#4A90E2", "curve");
+    
+        // Interactividad
+        d3.selectAll("#tree-style, #branch-style, #node-color, #branch-color").on("change", () => {
+            enforceBranchStyleRules();
+    
+            const style = document.getElementById("tree-style").value;
+            const branchStyle = document.getElementById("branch-style").value;
+            const nodeColor = document.getElementById("node-color").value;
+            const branchColor = document.getElementById("branch-color").value;
+            const size = parseInt(document.getElementById("phylo-size").value);
+            drawTree(style, nodeColor, branchColor, branchStyle, size, size * 0.7);
+        });
+    
+        document.getElementById("phylo-size").addEventListener("input", () => {
+            const style = document.getElementById("tree-style").value;
+            const branchStyle = document.getElementById("branch-style").value;
+            const nodeColor = document.getElementById("node-color").value;
+            const branchColor = document.getElementById("branch-color").value;
+            const size = parseInt(document.getElementById("phylo-size").value);
+            drawTree(style, nodeColor, branchColor, branchStyle, size, size * 0.7);
+        });
+    
+        document.getElementById("download-tree").addEventListener("click", function () {
+            const svgElement = document.querySelector("#tree-container svg");
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+            const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+            const url = URL.createObjectURL(svgBlob);
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            const img = new Image();
+    
+            img.onload = function () {
+                canvas.width = svgElement.clientWidth * 2;
+                canvas.height = svgElement.clientHeight * 2;
+                context.fillStyle = "white";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+    
+                const pngUrl = canvas.toDataURL("image/png");
+                const downloadLink = document.createElement("a");
+                downloadLink.href = pngUrl;
+                downloadLink.download = "phylogenetic_tree.png";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            };
+    
+            img.src = url;
+        });
+    
+        // Ejecutar regla de estilos al cargar
+        enforceBranchStyleRules();
+    </script>
+    
+    <!--Jaccard Phylogenetic tree-->
+    <script>
+        function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'curved', width = 900, height = 600) {
+            const svg = d3.select("#jaccard-phylotree");
+            svg.selectAll("*").remove();
+            svg.attr("width", width).attr("height", height);
+
+            const margin = { top: 60, right: 150, bottom: 60, left: 150 };
+            const treeWidth = width - margin.left - margin.right;
+            const treeHeight = height - margin.top - margin.bottom;
+            const g = svg.append("g")
+                .attr("transform", style === "rectangular"
+                    ? `translate(80, 50)`
+                    : `translate(${width / 2},${height / 2})`);;
+
+
+            const distanceMatrix = [];
+            proteinIds.forEach((p1, i) => {
+                distanceMatrix[i] = [];
+                proteinIds.forEach((p2, j) => {
+                    const key = `${p1}-${p2}`;
+                    const jaccard = jaccardIndices[key] || 0;
+                    distanceMatrix[i][j] = 1 - jaccard;
+                });
+            });
+
+            function upgma(distMatrix, labels) {
+                const n = distMatrix.length;
+                let clusters = labels.map((label, i) => ({ name: label, children: [], leaf: true, index: i, height: 0 }));
+                let current = distMatrix.map(row => row.slice());
+
+                for (let s = 0; s < n - 1; s++) {
+                    let min = Infinity, i = -1, j = -1;
+                    for (let a = 0; a < current.length; a++) {
+                        for (let b = a + 1; b < current[a].length; b++) {
+                            if (current[a][b] < min) {
+                                min = current[a][b]; i = a; j = b;
+                            }
+                        }
+                    }
+                    const c1 = clusters[i], c2 = clusters[j];
+                    const merged = { name: `Node_${s}`, children: [c1, c2], leaf: false, height: min / 2 };
+                    clusters = clusters.filter((_, k) => k !== i && k !== j);
+                    clusters.push(merged);
+                    const newRow = current.map((row, k) => (k !== i && k !== j) ? (row[i] + row[j]) / 2 : null).filter(v => v !== null);
+                    current = current.filter((_, k) => k !== i && k !== j).map(row => row.filter((_, l) => l !== i && l !== j));
+                    current.forEach((row, k) => row.push(newRow[k]));
+                    newRow.push(0); current.push(newRow);
+                }
+
+                return clusters[0];
+            }
+
+            const root = d3.hierarchy(upgma(distanceMatrix, proteinIds));
+
+            let layout;
+            if (style === "radial") {
+                layout = d3.tree().size([2 * Math.PI, Math.min(treeWidth, treeHeight) / 2 - 100]);
+            } else if (style === "circular") {
+                layout = d3.cluster().size([360, Math.min(treeWidth, treeHeight) / 2 - 100]);
+            } else {
+                layout = d3.cluster().size([treeHeight, treeWidth]);
+            }
+
+            layout(root);
+
+            const radialX = (a, r) => r * Math.cos(a - Math.PI / 2);
+            const radialY = (a, r) => r * Math.sin(a - Math.PI / 2);
+
+            const links = g.selectAll(".link")
+                .data(root.links())
+                .enter().append("path")
+                .attr("class", "link")
+                .attr("fill", "none")
+                .attr("stroke", linkColor)
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 0.8)
+                .attr("d", d => {
+                    if (style === "radial" || style === "circular") {
+                        const sx = radialX(d.source.x, d.source.y);
+                        const sy = radialY(d.source.x, d.source.y);
+                        const tx = radialX(d.target.x, d.target.y);
+                        const ty = radialY(d.target.x, d.target.y);
+                        return lineType === 'curved'
+                            ? `M${sx},${sy} C${sx},${sy + 50} ${tx},${ty - 50} ${tx},${ty}`
+                            : `M${sx},${sy} L${tx},${ty}`;
+                    } else {
+                        return lineType === 'curved'
+                            ? `M${d.source.y},${d.source.x} C${(d.source.y + d.target.y) / 2},${d.source.x} ${(d.source.y + d.target.y) / 2},${d.target.x} ${d.target.y},${d.target.x}`
+                            : `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
+                    }
+                });
+
+            const nodes = g.selectAll(".node")
+                .data(root.descendants())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => {
+                    if (style === "radial" || style === "circular") {
+                        const x = radialX(d.x, d.y);
+                        const y = radialY(d.x, d.y);
+                        return `translate(${x},${y})`;
+                    } else {
+                        return `translate(${d.y},${d.x})`;
+                    }
+                });
+
+            nodes.append("circle")
+                .attr("r", d => d.children ? 6 : 4)
+                .attr("fill", nodeColor)
+                .attr("stroke", "black")
+                .attr("stroke-width", 0.5);
+
+            nodes.filter(d => !d.children)
+                .append("text")
+                .attr("x", 10)
+                .attr("dy", "0.31em")
+                .style("font-size", "13px")
+                .style("font-family", "Courier") 
+                .text(d => d.data.name);
+        }
+
+        renderJaccardTree();
+
+        ["jaccard-tree-style", "jaccard-node-color", "jaccard-link-color", "jaccard-line-type", "jaccard-size"].forEach(id => {
+            document.getElementById(id).addEventListener("input", () => {
+                const style = document.getElementById("jaccard-tree-style").value;
+                const nodeColor = document.getElementById("jaccard-node-color").value;
+                const linkColor = document.getElementById("jaccard-link-color").value;
+                const lineType = document.getElementById("jaccard-line-type").value;
+                const size = parseInt(document.getElementById("jaccard-size").value);
+                renderJaccardTree(style, nodeColor, linkColor, lineType, size, size * 0.7);
+            });
+        });
+
+        // PNG Download for Jaccard Tree
+
+        document.getElementById("download-jaccard-png").addEventListener("click", function() {
+            const svgElement = document.getElementById("jaccard-phylotree");
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+            const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+            const url = URL.createObjectURL(svgBlob);
+
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            const img = new Image();
+
+            img.onload = function () {
+                canvas.width = svgElement.clientWidth * 2;
+                canvas.height = svgElement.clientHeight * 2;
+                context.fillStyle = "white";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+
+                const pngUrl = canvas.toDataURL("image/png");
+                const downloadLink = document.createElement("a");
+                downloadLink.href = pngUrl;
+                downloadLink.download = "jaccard_tree.png";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            };
+
+            img.src = url;
+        });
+        </script>
+
+        <script>
+            function enforceJaccardBranchStyleRules() {
+                const style = document.getElementById("jaccard-tree-style").value;
+                const branchSelect = document.getElementById("jaccard-line-type");
+                const current = branchSelect.value;
+
+                if (style === "circular") {
+                    branchSelect.querySelector('option[value="curved"]').disabled = true;
+                    if (current === "curved") {
+                        branchSelect.value = "straight";
+                    }
+                } else {
+                    branchSelect.querySelector('option[value="curved"]').disabled = false;
+                }
+            }
+
+            function renderJaccardTree(style = 'rectangular', nodeColor = '#4682B4', linkColor = '#4A90E2', lineType = 'curved', width = 900, height = 600) {
+                const svg = d3.select("#jaccard-phylotree");
+                svg.selectAll("*").remove();
+                svg.attr("width", width).attr("height", height);
+
+                const margin = { top: 60, right: 150, bottom: 60, left: 150 };
+                const treeWidth = width - margin.left - margin.right;
+                const treeHeight = height - margin.top - margin.bottom;
+                const g = svg.append("g")
+                    .attr("transform", style === "rectangular"
+                        ? `translate(80, 50)`
+                        : `translate(${width / 2},${height / 2})`);
+
+                const distanceMatrix = [];
+                proteinIds.forEach((p1, i) => {
+                    distanceMatrix[i] = [];
+                    proteinIds.forEach((p2, j) => {
+                        const key = `${p1}-${p2}`;
+                        const jaccard = jaccardIndices[key] || 0;
+                        distanceMatrix[i][j] = 1 - jaccard;
+                    });
+                });
+
+                function upgma(distMatrix, labels) {
+                    const n = distMatrix.length;
+                    let clusters = labels.map((label, i) => ({ name: label, children: [], leaf: true, index: i, height: 0 }));
+                    let current = distMatrix.map(row => row.slice());
+
+                    for (let s = 0; s < n - 1; s++) {
+                        let min = Infinity, i = -1, j = -1;
+                        for (let a = 0; a < current.length; a++) {
+                            for (let b = a + 1; b < current[a].length; b++) {
+                                if (current[a][b] < min) {
+                                    min = current[a][b]; i = a; j = b;
+                                }
+                            }
+                        }
+                        const c1 = clusters[i], c2 = clusters[j];
+                        const merged = { name: `Node_${s}`, children: [c1, c2], leaf: false, height: min / 2 };
+                        clusters = clusters.filter((_, k) => k !== i && k !== j);
+                        clusters.push(merged);
+                        const newRow = current.map((row, k) => (k !== i && k !== j) ? (row[i] + row[j]) / 2 : null).filter(v => v !== null);
+                        current = current.filter((_, k) => k !== i && k !== j).map(row => row.filter((_, l) => l !== i && l !== j));
+                        current.forEach((row, k) => row.push(newRow[k]));
+                        newRow.push(0); current.push(newRow);
+                    }
+
+                    return clusters[0];
+                }
+
+                const root = d3.hierarchy(upgma(distanceMatrix, proteinIds));
+
+                let layout;
+                if (style === "radial") {
+                    layout = d3.tree().size([2 * Math.PI, Math.min(treeWidth, treeHeight) / 2 - 100]);
+                } else if (style === "circular") {
+                    layout = d3.cluster().size([360, Math.min(treeWidth, treeHeight) / 2 - 100]);
+                } else {
+                    layout = d3.cluster().size([treeHeight, treeWidth]);
+                }
+
+                layout(root);
+
+                const radialX = (a, r) => r * Math.cos(a - Math.PI / 2);
+                const radialY = (a, r) => r * Math.sin(a - Math.PI / 2);
+
+                const links = g.selectAll(".link")
+                    .data(root.links())
+                    .enter().append("path")
+                    .attr("class", "link")
+                    .attr("fill", "none")
+                    .attr("stroke", linkColor)
+                    .attr("stroke-width", 2)
+                    .attr("stroke-opacity", 0.8)
+                    .attr("d", d => {
+                        if (style === "radial" || style === "circular") {
+                            const sx = radialX(d.source.x, d.source.y);
+                            const sy = radialY(d.source.x, d.source.y);
+                            const tx = radialX(d.target.x, d.target.y);
+                            const ty = radialY(d.target.x, d.target.y);
+                            return lineType === 'curved'
+                                ? `M${sx},${sy} C${sx},${sy + 50} ${tx},${ty - 50} ${tx},${ty}`
+                                : `M${sx},${sy} L${tx},${ty}`;
+                        } else {
+                            return lineType === 'curved'
+                                ? `M${d.source.y},${d.source.x} C${(d.source.y + d.target.y) / 2},${d.source.x} ${(d.source.y + d.target.y) / 2},${d.target.x} ${d.target.y},${d.target.x}`
+                                : `M${d.source.y},${d.source.x} L${d.target.y},${d.target.x}`;
+                        }
+                    });
+
+                const nodes = g.selectAll(".node")
+                    .data(root.descendants())
+                    .enter().append("g")
+                    .attr("class", "node")
+                    .attr("transform", d => {
+                        if (style === "radial" || style === "circular") {
+                            const x = radialX(d.x, d.y);
+                            const y = radialY(d.x, d.y);
+                            return `translate(${x},${y})`;
+                        } else {
+                            return `translate(${d.y},${d.x})`;
+                        }
+                    });
+
+                nodes.append("circle")
+                    .attr("r", d => d.children ? 6 : 4)
+                    .attr("fill", nodeColor)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 0.5);
+
+                nodes.filter(d => !d.children)
+                    .append("text")
+                    .attr("x", 10)
+                    .attr("dy", "0.31em")
+                    .style("font-size", "13px")
+                    .style("font-family", "Courier")
+                    .text(d => d.data.name);
+            }
+
+            renderJaccardTree();
+
+            ["jaccard-tree-style", "jaccard-node-color", "jaccard-link-color", "jaccard-line-type", "jaccard-size"].forEach(id => {
+                document.getElementById(id).addEventListener("input", () => {
+                    enforceJaccardBranchStyleRules();
+
+                    const style = document.getElementById("jaccard-tree-style").value;
+                    const nodeColor = document.getElementById("jaccard-node-color").value;
+                    const linkColor = document.getElementById("jaccard-link-color").value;
+                    const lineType = document.getElementById("jaccard-line-type").value;
+                    const size = parseInt(document.getElementById("jaccard-size").value);
+                    renderJaccardTree(style, nodeColor, linkColor, lineType, size, size * 0.7);
+                });
+            });
+
+            document.getElementById("download-jaccard-png").addEventListener("click", function () {
+                const svgElement = document.getElementById("jaccard-phylotree");
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svgElement);
+                const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+                const url = URL.createObjectURL(svgBlob);
+
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+                const img = new Image();
+
+                img.onload = function () {
+                    canvas.width = svgElement.clientWidth * 2;
+                    canvas.height = svgElement.clientHeight * 2;
+                    context.fillStyle = "white";
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(url);
+
+                    const pngUrl = canvas.toDataURL("image/png");
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = pngUrl;
+                    downloadLink.download = "jaccard_tree.png";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                };
+
+                img.src = url;
+            });
+
+            // Enforce once on load
+            enforceJaccardBranchStyleRules();
+        </script>
+
+    
+    <!--Uniprot entries -->
+    <script>
+        function populateUniProtLinks() {
+            const list = document.getElementById("uniprot-list");
+            list.innerHTML = "";  // Limpia por si acaso
+        
+            proteinIds.forEach(id => {
+                const li = document.createElement("li");
+                const a = document.createElement("a");
+                a.href = `https://www.uniprot.org/uniprotkb/${id}`;
+                a.target = "_blank";
+                a.textContent = id;
+                a.style.color = "#333";
+                a.style.textDecoration = "none";
+                a.style.fontWeight = "bold";
+                a.style.display = "block";
+                a.style.margin = "6px 0";
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+        }
+        
+        // Llamar a la función al cargar
+        populateUniProtLinks();
+    </script>
+     
 </body>
 {% endblock %}
